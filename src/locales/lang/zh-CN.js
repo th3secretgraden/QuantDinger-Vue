@@ -3011,6 +3011,7 @@ const locale = {
 
   // Quick Trade Panel
   'quickTrade.title': '闪电交易',
+  'quickTrade.selectSymbol': '选择交易对',
   'quickTrade.exchange': '交易所',
   'quickTrade.selectExchange': '选择交易所账户',
   'quickTrade.cryptoOnly': '仅支持加密货币',

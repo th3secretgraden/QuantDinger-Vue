@@ -21,11 +21,31 @@
 
     <!-- Symbol & Price Bar -->
     <div class="qt-symbol-bar">
-      <div class="qt-symbol-info">
-        <span class="qt-symbol-name">{{ symbol }}</span>
-        <a-tag v-if="presetSide" :color="presetSide === 'buy' ? '#52c41a' : '#f5222d'" size="small">
-          {{ presetSide === 'buy' ? $t('quickTrade.long') : $t('quickTrade.short') }}
-        </a-tag>
+      <div class="qt-symbol-selector">
+        <a-select
+          v-model="currentSymbol"
+          show-search
+          :placeholder="$t('quickTrade.selectSymbol')"
+          style="width: 100%"
+          :filter-option="false"
+          :not-found-content="symbolSearching ? null : undefined"
+          @search="handleSymbolSearch"
+          @change="handleSymbolChange"
+          @focus="handleSymbolFocus"
+          :loading="symbolSearching"
+        >
+          <a-icon slot="suffixIcon" type="search" style="color: #999" />
+          <a-select-option
+            v-for="item in symbolSuggestions"
+            :key="item.value"
+            :value="item.value"
+          >
+            <div class="qt-symbol-option">
+              <span class="qt-symbol-option-name">{{ item.symbol }}</span>
+              <span v-if="item.name" class="qt-symbol-option-desc">{{ item.name }}</span>
+            </div>
+          </a-select-option>
+        </a-select>
       </div>
       <div class="qt-price-display" :class="priceChangeClass">
         <span class="qt-current-price">${{ formatPrice(currentPrice) }}</span>
@@ -250,26 +270,33 @@
 
     <!-- Recent Trades -->
     <div class="qt-history-section" v-if="recentTrades.length > 0">
-      <div class="qt-section-header">
-        <a-icon type="history" /> {{ $t('quickTrade.recentTrades') }}
-      </div>
-      <div class="qt-trade-list">
-        <div class="qt-trade-item" v-for="t in recentTrades" :key="t.id">
-          <div class="qt-trade-main">
-            <a-tag :color="t.side === 'buy' ? '#52c41a' : '#f5222d'" size="small">
-              {{ t.side === 'buy' ? 'LONG' : 'SHORT' }}
-            </a-tag>
-            <span class="qt-trade-symbol">{{ t.symbol }}</span>
-            <span class="qt-trade-amount">${{ formatPrice(t.amount) }}</span>
+      <a-collapse :bordered="false" :activeKey="historyCollapsed ? [] : ['history']" @change="handleHistoryCollapse">
+        <a-collapse-panel key="history" :showArrow="false" :style="collapseStyle">
+          <template slot="header">
+            <div class="qt-section-header" style="margin: 0; padding: 0;">
+              <a-icon type="history" /> {{ $t('quickTrade.recentTrades') }}
+              <span class="qt-history-count">({{ recentTrades.length }})</span>
+            </div>
+          </template>
+          <div class="qt-trade-list">
+            <div class="qt-trade-item" v-for="t in recentTrades" :key="t.id">
+              <div class="qt-trade-main">
+                <a-tag :color="t.side === 'buy' ? '#52c41a' : '#f5222d'" size="small">
+                  {{ t.side === 'buy' ? 'LONG' : 'SHORT' }}
+                </a-tag>
+                <span class="qt-trade-symbol">{{ t.symbol }}</span>
+                <span class="qt-trade-amount">${{ formatPrice(t.amount) }}</span>
+              </div>
+              <div class="qt-trade-meta">
+                <a-tag :color="t.status === 'filled' ? '#52c41a' : t.status === 'failed' ? '#f5222d' : '#faad14'" size="small">
+                  {{ t.status }}
+                </a-tag>
+                <span class="qt-trade-time">{{ formatTime(t.created_at) }}</span>
+              </div>
+            </div>
           </div>
-          <div class="qt-trade-meta">
-            <a-tag :color="t.status === 'filled' ? '#52c41a' : t.status === 'failed' ? '#f5222d' : '#faad14'" size="small">
-              {{ t.status }}
-            </a-tag>
-            <span class="qt-trade-time">{{ formatTime(t.created_at) }}</span>
-          </div>
-        </div>
-      </div>
+        </a-collapse-panel>
+      </a-collapse>
     </div>
 
   </a-drawer>
@@ -279,6 +306,9 @@
 import { mapState } from 'vuex'
 import { listExchangeCredentials } from '@/api/credentials'
 import { placeQuickOrder, getQuickTradeBalance, getQuickTradePosition, getQuickTradeHistory, closeQuickTradePosition } from '@/api/quick-trade'
+import { searchSymbols, getWatchlist } from '@/api/market'
+import { getUserInfo } from '@/api/login'
+import request from '@/utils/request'
 
 export default {
   name: 'QuickTradePanel',
@@ -311,6 +341,13 @@ export default {
       currentPrice: 0,
       currentPosition: null,
       recentTrades: [],
+      historyCollapsed: false, // 交易记录折叠状态
+      // symbol search
+      currentSymbol: '',
+      symbolSuggestions: [],
+      symbolSearching: false,
+      symbolSearchTimer: null,
+      userId: null, // 用户ID，用于获取自选列表
       // constants
       quickAmountPcts: [10, 25, 50, 75, 100],
       leverageMarks: { 1: '1x', 5: '5x', 10: '10x', 25: '25x', 50: '50x', 100: '100x', 125: '125x' },
@@ -338,7 +375,7 @@ export default {
       return 4
     },
     canSubmit () {
-      return this.selectedCredentialId && this.symbol && this.amount > 0 && !this.submitting
+      return this.selectedCredentialId && this.currentSymbol && this.amount > 0 && !this.submitting
     },
     priceChangeClass () {
       return ''
@@ -356,14 +393,25 @@ export default {
       }
     },
     symbol (val) {
-      // Reload position when symbol changes
-      if (val && this.selectedCredentialId) {
-        this.loadPosition()
+      // Update currentSymbol when prop changes
+      if (val) {
+        this.currentSymbol = val
+      }
+    },
+    currentSymbol (val) {
+      // Reload price and position when symbol changes
+      if (val) {
+        this.loadPrice()
+        if (this.selectedCredentialId) {
+          this.loadPosition()
+        }
+        // Emit symbol change to parent
+        this.$emit('update:symbol', val)
       }
     },
     selectedCredentialId (val) {
       // Reload position when credential changes
-      if (val && this.symbol) {
+      if (val && this.currentSymbol) {
         this.loadPosition()
       }
     },
@@ -379,18 +427,161 @@ export default {
   },
   methods: {
     async init () {
+      // Initialize current symbol from prop
+      this.currentSymbol = this.symbol || ''
       if (this.presetSide) this.side = this.presetSide
       if (this.presetPrice > 0) {
         this.currentPrice = this.presetPrice
         this.limitPrice = this.presetPrice
       }
       await this.loadCredentials()
+      // Load user info to get userId
+      await this.loadUserInfo()
+      // Load watchlist crypto symbols for initial suggestions
+      await this.loadWatchlistSymbols()
+      // Load price for current symbol
+      if (this.currentSymbol) {
+        await this.loadPrice()
+      }
       // Load position if credential and symbol are already available
-      if (this.selectedCredentialId && this.symbol) {
+      if (this.selectedCredentialId && this.currentSymbol) {
         await this.loadPosition()
       }
       this.loadHistory()
       this.startPolling()
+    },
+    async loadUserInfo () {
+      try {
+        // Try to get user info from store first
+        const store = this.$store
+        const storeUserInfo = store?.getters?.userInfo || {}
+        if (storeUserInfo && storeUserInfo.id) {
+          this.userId = storeUserInfo.id
+          return
+        }
+        // If not in store, fetch from API
+        const res = await getUserInfo()
+        if (res && res.code === 1 && res.data) {
+          this.userId = res.data.id
+          // Update store
+          if (store) {
+            store.commit('SET_INFO', res.data)
+          }
+        }
+      } catch (e) {
+        console.warn('loadUserInfo error:', e)
+      }
+    },
+    async loadWatchlistSymbols () {
+      if (!this.userId) {
+        // If no userId, try to load it first
+        await this.loadUserInfo()
+        if (!this.userId) {
+          console.warn('Cannot load watchlist: userId not available')
+          return
+        }
+      }
+      try {
+        // Load watchlist and filter crypto symbols
+        const res = await getWatchlist({ userid: this.userId })
+        if (res && res.code === 1 && res.data) {
+          // Filter only Crypto market symbols
+          const cryptoSymbols = (res.data || []).filter(item =>
+            (item.market || '').toLowerCase() === 'crypto'
+          ).map(item => ({
+            value: item.symbol || '',
+            symbol: item.symbol || '',
+            name: item.name || ''
+          })).filter(item => item.value)
+
+          this.symbolSuggestions = cryptoSymbols
+        }
+      } catch (e) {
+        console.warn('loadWatchlistSymbols error:', e)
+      }
+    },
+    handleSymbolSearch (value) {
+      // Clear previous timer
+      if (this.symbolSearchTimer) {
+        clearTimeout(this.symbolSearchTimer)
+      }
+
+      if (!value || value.trim() === '') {
+        // If empty, load watchlist symbols
+        this.loadWatchlistSymbols()
+        return
+      }
+
+      // Debounce search
+      this.symbolSearchTimer = setTimeout(async () => {
+        this.symbolSearching = true
+        try {
+          const res = await searchSymbols({ market: 'Crypto', keyword: value.trim(), limit: 20 })
+          if (res && res.code === 1 && res.data) {
+            this.symbolSuggestions = (res.data.items || res.data || []).map(item => ({
+              value: item.symbol || '',
+              symbol: item.symbol || '',
+              name: item.name || ''
+            })).filter(item => item.value)
+          } else {
+            this.symbolSuggestions = []
+          }
+        } catch (e) {
+          console.warn('handleSymbolSearch error:', e)
+          this.symbolSuggestions = []
+        } finally {
+          this.symbolSearching = false
+        }
+      }, 300)
+    },
+    handleSymbolChange (value) {
+      if (value && value !== this.currentSymbol) {
+        this.currentSymbol = value
+        // Load price for new symbol
+        this.loadPrice()
+        // Reload position for new symbol
+        if (this.selectedCredentialId) {
+          this.loadPosition()
+        }
+        // Emit to parent
+        this.$emit('update:symbol', value)
+      }
+    },
+    async loadPrice () {
+      if (!this.currentSymbol) {
+        this.currentPrice = 0
+        return
+      }
+      try {
+        // Use market API to get current price
+        const res = await request({
+          url: '/api/market/price',
+          method: 'get',
+          params: {
+            market: 'Crypto',
+            symbol: this.currentSymbol
+          }
+        })
+        if (res && res.code === 1 && res.data) {
+          const price = parseFloat(res.data.price || 0)
+          if (price > 0) {
+            this.currentPrice = price
+            // Update limit price if it's 0 or same as old price
+            if (this.limitPrice === 0 || this.limitPrice === this.presetPrice) {
+              this.limitPrice = price
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('loadPrice error:', e)
+        // Don't reset price on error, keep current value
+      }
+    },
+    handleSymbolFocus () {
+      // Load watchlist symbols when focusing if no suggestions
+      if (this.symbolSuggestions.length === 0) {
+        this.loadWatchlistSymbols()
+      }
     },
     async loadCredentials () {
       this.credLoading = true
@@ -436,15 +627,15 @@ export default {
       }
     },
     async loadPosition () {
-      if (!this.selectedCredentialId || !this.symbol) {
-        console.log('loadPosition skipped:', { credentialId: this.selectedCredentialId, symbol: this.symbol })
+      if (!this.selectedCredentialId || !this.currentSymbol) {
+        console.log('loadPosition skipped:', { credentialId: this.selectedCredentialId, symbol: this.currentSymbol })
         return
       }
       try {
-        console.log('Loading position:', { credential_id: this.selectedCredentialId, symbol: this.symbol, market_type: this.marketType })
+        console.log('Loading position:', { credential_id: this.selectedCredentialId, symbol: this.currentSymbol, market_type: this.marketType })
         const res = await getQuickTradePosition({
           credential_id: this.selectedCredentialId,
-          symbol: this.symbol,
+          symbol: this.currentSymbol,
           market_type: this.marketType
         })
         console.log('Position response:', res)
@@ -467,7 +658,7 @@ export default {
       // Try to load position immediately
       let found = await this.loadPosition()
       if (found) return
-      
+
       // If not found, retry with delay (exchange may need time to update)
       for (let i = 0; i < maxRetries; i++) {
         await new Promise(resolve => setTimeout(resolve, delayMs))
@@ -500,7 +691,7 @@ export default {
       try {
         const payload = {
           credential_id: this.selectedCredentialId,
-          symbol: this.symbol,
+          symbol: this.currentSymbol,
           side: this.side,
           order_type: this.orderType,
           amount: this.amount,
@@ -515,11 +706,11 @@ export default {
         if (res.code === 1) {
           // Emit event for parent component (parent will show success message)
           this.$emit('order-success', res.data)
-          
+
           // Reload all data after successful order
           await this.loadBalance()
           await this.loadHistory()
-          
+
           // Load position with retry mechanism (exchange may need time to update)
           await this.loadPositionWithRetry()
         } else {
@@ -538,7 +729,7 @@ export default {
         // Use the new close-position API
         const payload = {
           credential_id: this.selectedCredentialId,
-          symbol: this.symbol,
+          symbol: this.currentSymbol,
           market_type: this.marketType,
           size: 0, // 0 means close full position
           source: 'manual'
@@ -567,7 +758,11 @@ export default {
     startPolling () {
       this.stopPolling()
       this.pollTimer = setInterval(() => {
-        if (this.selectedCredentialId) {
+        if (this.currentSymbol) {
+          // Always update price
+          this.loadPrice()
+        }
+        if (this.selectedCredentialId && this.currentSymbol) {
           this.loadBalance()
           this.loadPosition()
         }
@@ -582,6 +777,10 @@ export default {
     handleClose () {
       this.$emit('close')
       this.$emit('update:visible', false)
+    },
+    handleHistoryCollapse (activeKeys) {
+      // activeKeys 是数组，如果包含 'history' 则展开，否则折叠
+      this.historyCollapsed = !activeKeys.includes('history')
     },
     formatPrice (val) {
       const v = parseFloat(val || 0)
@@ -644,22 +843,40 @@ export default {
   padding: 12px 20px;
   background: linear-gradient(135deg, #f6f8fc 0%, #eef2f8 100%);
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  .qt-symbol-info {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    .qt-symbol-name {
-      font-size: 18px;
-      font-weight: 700;
-      letter-spacing: 0.5px;
+  flex-direction: column;
+  gap: 8px;
+  .qt-symbol-selector {
+    width: 100%;
+    /deep/ .ant-select {
+      width: 100%;
+    }
+    /deep/ .ant-select-selection {
+      border-radius: 6px;
+      border: 1px solid #d9d9d9;
     }
   }
-  .qt-current-price {
-    font-size: 18px;
+  .qt-price-display {
+    display: flex;
+    justify-content: flex-end;
+    .qt-current-price {
+      font-size: 16px;
+      font-weight: 600;
+      color: #333;
+    }
+  }
+}
+
+.qt-symbol-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  .qt-symbol-option-name {
     font-weight: 600;
-    color: #333;
+    font-size: 14px;
+  }
+  .qt-symbol-option-desc {
+    color: #999;
+    font-size: 12px;
   }
 }
 
@@ -781,8 +998,7 @@ export default {
   }
 }
 
-.qt-position-section,
-.qt-history-section {
+.qt-position-section {
   padding: 8px 20px 12px;
   .qt-section-header {
     font-size: 13px;
@@ -792,6 +1008,45 @@ export default {
     display: flex;
     align-items: center;
     gap: 6px;
+  }
+}
+
+.qt-history-section {
+  padding: 8px 20px 12px;
+  /deep/ .ant-collapse {
+    background: transparent;
+    border: none;
+  }
+  /deep/ .ant-collapse-item {
+    border: none;
+  }
+  /deep/ .ant-collapse-header {
+    padding: 0 !important;
+    cursor: pointer;
+    &:hover {
+      opacity: 0.8;
+    }
+  }
+  /deep/ .ant-collapse-content {
+    border: none;
+    background: transparent;
+  }
+  /deep/ .ant-collapse-content-box {
+    padding: 8px 0 0 0 !important;
+  }
+  .qt-section-header {
+    font-size: 13px;
+    font-weight: 600;
+    color: #666;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    user-select: none;
+  }
+  .qt-history-count {
+    font-size: 12px;
+    color: #999;
+    font-weight: 400;
   }
 }
 
@@ -853,8 +1108,19 @@ export default {
   }
   .qt-symbol-bar {
     background: linear-gradient(135deg, #1a1f2e 0%, #141824 100%);
-    .qt-symbol-name { color: #e0e0e0; }
     .qt-current-price { color: #e0e0e0; }
+    /deep/ .ant-select-selection {
+      background: #1a1f2e;
+      border-color: #303030;
+      color: #e0e0e0;
+    }
+    /deep/ .ant-select-selection__placeholder {
+      color: #666;
+    }
+  }
+  .qt-symbol-option {
+    .qt-symbol-option-name { color: #e0e0e0; }
+    .qt-symbol-option-desc { color: #999; }
   }
   .qt-section {
     .qt-label { color: #777; }
@@ -863,6 +1129,28 @@ export default {
     background: #1a1f2e;
     .qt-pos-row span:first-child { color: #777; }
     .qt-pos-row span:last-child { color: #ccc; }
+  }
+  .qt-history-section {
+    .qt-section-header {
+      color: #ccc;
+    }
+    .qt-history-count {
+      color: #888;
+    }
+    /deep/ .ant-collapse {
+      background: transparent !important;
+      color: #ccc;
+      .ant-collapse-header {
+        color: #ccc !important;
+        &:hover {
+          opacity: 0.8;
+        }
+      }
+      .ant-collapse-content {
+        background: transparent;
+        color: #ccc;
+      }
+    }
   }
   .qt-trade-item {
     border-bottom-color: #2a2a2a !important;

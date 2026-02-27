@@ -71,6 +71,7 @@
       market-type="swap"
       @close="showQuickTrade = false"
       @order-success="onQuickTradeSuccess"
+      @update:symbol="handleQuickTradeSymbolChange"
     />
 
     <!-- ======== Main Workspace Card with Tabs ======== -->
@@ -285,6 +286,11 @@ export default {
     },
     onQuickTradeSuccess () {
       this.$message.success(this.$t('quickTrade.orderSuccess'))
+    },
+    handleQuickTradeSymbolChange (newSymbol) {
+      if (newSymbol) {
+        this.qtSymbol = newSymbol
+      }
     }
   }
 }

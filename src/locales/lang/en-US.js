@@ -3157,6 +3157,7 @@ const locale = {
 
   // Quick Trade Panel
   'quickTrade.title': 'Quick Trade',
+  'quickTrade.selectSymbol': 'Select Trading Pair',
   'quickTrade.exchange': 'Exchange',
   'quickTrade.selectExchange': 'Select exchange account',
   'quickTrade.cryptoOnly': 'Crypto only',

@@ -679,6 +679,7 @@
       market-type="swap"
       @close="showQuickTrade = false"
       @order-success="onQuickTradeSuccess"
+      @update:symbol="handleQuickTradeSymbolChange"
     />
   </div>
 </template>
@@ -776,6 +777,14 @@ export default {
 
     const onQuickTradeSuccess = () => {
       message.success(proxy.$t('quickTrade.orderSuccess'))
+    }
+
+    const handleQuickTradeSymbolChange = (newSymbol) => {
+      if (newSymbol && isCryptoMarket.value) {
+        qtSymbol.value = newSymbol
+        // Optionally update the main chart symbol if needed
+        // currentSymbol.value = newSymbol
+      }
     }
 
     // 跳转到指标市场（指标社区）
@@ -2163,6 +2172,7 @@ getMarketColor,
       isCryptoMarket,
       openQuickTrade,
       onQuickTradeSuccess,
+      handleQuickTradeSymbolChange,
       // 指标市场跳转
       goToIndicatorMarket
     }
