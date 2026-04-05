@@ -935,17 +935,17 @@ export default {
       egressServerIpv6: '',
       egressIpLoading: false,
       cryptoExchangeList: [
-        { id: 'binance', name: 'Binance', docsUrl: 'https://www.binance.com/en/support/faq/api-faq-360027369792' },
-        { id: 'okx', name: 'OKX', docsUrl: 'https://www.okx.com/help/how-do-i-create-my-api-key' },
-        { id: 'bitget', name: 'Bitget', docsUrl: 'https://www.bitget.com/api-doc/common/introduction' },
+        { id: 'binance', name: 'Binance', docsUrl: 'https://www.binance.com/en/support/faq/detail/360002502072' },
+        { id: 'okx', name: 'OKX', docsUrl: 'https://www.okx.com/docs-v5/zh/#overview-v5-api-key-creation' },
+        { id: 'bitget', name: 'Bitget', docsUrl: 'https://www.bitget.com/api-doc/common/quick-start' },
         { id: 'bybit', name: 'Bybit', docsUrl: 'https://www.bybit.com/en/help-center/article/How-to-create-your-API-key/' },
         { id: 'coinbaseexchange', name: 'Coinbase', docsUrl: 'https://docs.cdp.coinbase.com/exchange/rest-api/authentication' },
         { id: 'kraken', name: 'Kraken', docsUrl: 'https://support.kraken.com/articles/360000919966-how-to-create-an-api-key' },
         { id: 'kucoin', name: 'KuCoin', docsUrl: 'https://www.kucoin.com/docs-new/authentication' },
         { id: 'gate', name: 'Gate.io', docsUrl: 'https://www.gate.com/docs/developers/apiv4/' },
         { id: 'bitfinex', name: 'Bitfinex', docsUrl: 'https://docs.bitfinex.com/docs/create-an-api-key' },
-        { id: 'deepcoin', name: 'Deepcoin', docsUrl: 'https://www.deepcoin.com/docs/deepcoinApiDocs/' },
-        { id: 'htx', name: 'HTX', docsUrl: 'https://www.htx.com/support/en-us/detail/360000188081' }
+        { id: 'deepcoin', name: 'Deepcoin', docsUrl: 'https://www.deepcoin.com/docs/authentication' },
+        { id: 'htx', name: 'HTX', docsUrl: 'https://www.htx.com/en-us/opend/newApiPages/?id=414' }
       ],
       exchangeSignupCards: [
         {

@@ -4,6 +4,7 @@
     :visible="visible"
     :width="isMobile ? '100%' : 1060"
     :maskClosable="true"
+    :wrapClassName="drawerWrapClass"
     @close="$emit('cancel')"
     class="backtest-history-drawer"
   >
@@ -104,6 +105,7 @@
       :visible="showAIResult"
       :footer="null"
       :width="isMobile ? '100%' : 900"
+      :wrapClassName="aiModalWrapClass"
       @cancel="showAIResult = false"
     >
       <div v-if="analyzing" style="padding: 24px 0; text-align: center;">
@@ -156,6 +158,7 @@
 
 <script>
 import request, { ANALYSIS_TIMEOUT } from '@/utils/request'
+import moment from 'moment'
 
 export default {
   name: 'BacktestHistoryDrawer',
@@ -168,7 +171,8 @@ export default {
     symbol: { type: String, default: '' },
     market: { type: String, default: '' },
     timeframe: { type: String, default: '' },
-    isMobile: { type: Boolean, default: false }
+    isMobile: { type: Boolean, default: false },
+    isDark: { type: Boolean, default: false }
   },
   data () {
     return {
@@ -204,6 +208,12 @@ export default {
     },
     renderedAIHtml () {
       return this.markdownToHtml(this.aiResult || '')
+    },
+    drawerWrapClass () {
+      return this.isDark ? 'backtest-history-drawer-wrap backtest-history-drawer-wrap--dark' : 'backtest-history-drawer-wrap'
+    },
+    aiModalWrapClass () {
+      return this.isDark ? 'backtest-history-ai-modal backtest-history-ai-modal--dark' : 'backtest-history-ai-modal'
     }
   },
   watch: {
@@ -246,10 +256,31 @@ export default {
       this.columns = columns
     },
     formatLocalDateTime (value) {
-      if (!value) return '-'
-      const date = new Date(value)
-      if (Number.isNaN(date.getTime())) return String(value)
-      return date.toLocaleString()
+      const m = this.parseDateTimeToLocal(value)
+      return m ? m.format('YYYY-MM-DD HH:mm:ss') : '-'
+    },
+    parseDateTimeToLocal (value) {
+      if (!value && value !== 0) return null
+      if (moment.isMoment(value)) return value.clone()
+      if (typeof value === 'number') {
+        return String(value).length <= 10 ? moment.unix(value) : moment(value)
+      }
+      const raw = String(value).trim()
+      if (!raw) return null
+      if (/^\d+$/.test(raw)) {
+        const n = Number(raw)
+        return raw.length <= 10 ? moment.unix(n) : moment(n)
+      }
+      if (/[zZ]|[-+]\d{2}:\d{2}$/.test(raw)) {
+        const zoned = moment(raw)
+        return zoned.isValid() ? zoned.local() : null
+      }
+      if (/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(:\d{2})?$/.test(raw)) {
+        const utcMoment = moment.utc(raw, ['YYYY-MM-DD HH:mm:ss', 'YYYY-MM-DD HH:mm', 'YYYY-MM-DDTHH:mm:ss', moment.ISO_8601], true)
+        return utcMoment.isValid() ? utcMoment.local() : null
+      }
+      const localMoment = moment(raw)
+      return localMoment.isValid() ? localMoment : null
     },
     async copyAIResult () {
       if (!this.aiResult) return
@@ -592,5 +623,153 @@ export default {
   font-size: 13px;
   line-height: 1.7;
   padding: 8px 0;
+}
+</style>
+
+<style lang="less">
+.backtest-history-drawer-wrap--dark {
+  .ant-drawer-content {
+    background: #1f1f1f;
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  .ant-drawer-header {
+    background: #1f1f1f;
+    border-bottom-color: #303030;
+  }
+
+  .ant-drawer-title {
+    color: rgba(255, 255, 255, 0.88);
+  }
+
+  .ant-drawer-close {
+    color: rgba(255, 255, 255, 0.55);
+  }
+
+  .ant-drawer-body {
+    background: #1f1f1f;
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  .drawer-toolbar .selected-tip {
+    color: rgba(255, 255, 255, 0.45);
+  }
+
+  .ant-input,
+  .ant-select-selection,
+  .ant-select-selection--single {
+    background: #141414 !important;
+    border-color: #434343 !important;
+    color: rgba(255, 255, 255, 0.88) !important;
+  }
+
+  .ant-select-selection-selected-value,
+  .ant-select-selection-placeholder,
+  .ant-input::placeholder {
+    color: rgba(255, 255, 255, 0.45) !important;
+  }
+
+  .ant-table {
+    background: transparent;
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  .ant-table-thead > tr > th {
+    background: rgba(255, 255, 255, 0.04);
+    color: rgba(255, 255, 255, 0.65);
+    border-bottom-color: #303030;
+  }
+
+  .ant-table-tbody > tr > td {
+    background: transparent;
+    color: rgba(255, 255, 255, 0.85);
+    border-bottom-color: #303030;
+  }
+
+  .ant-table-tbody > tr:hover > td {
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .ant-pagination-item {
+    background: #1f1f1f;
+    border-color: #434343;
+  }
+
+  .ant-pagination-item a,
+  .ant-pagination-prev .ant-pagination-item-link,
+  .ant-pagination-next .ant-pagination-item-link {
+    color: rgba(255, 255, 255, 0.65);
+    background: #1f1f1f;
+    border-color: #434343;
+  }
+
+  .ant-empty-description {
+    color: rgba(255, 255, 255, 0.45);
+  }
+}
+
+.backtest-history-ai-modal--dark {
+  .ant-modal-content,
+  .ant-modal-header,
+  .ant-modal-body,
+  .ant-modal-footer {
+    background: #1f1f1f;
+  }
+
+  .ant-modal-header {
+    border-bottom-color: #303030;
+  }
+
+  .ant-modal-title,
+  .ai-markdown-content,
+  .ai-result-content {
+    color: rgba(255, 255, 255, 0.88);
+  }
+
+  .ant-modal-close {
+    color: rgba(255, 255, 255, 0.55);
+  }
+
+  .ai-meta-card {
+    background: linear-gradient(180deg, rgba(23, 125, 220, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%);
+    border-color: rgba(23, 125, 220, 0.22);
+  }
+
+  .ai-markdown-card {
+    background: linear-gradient(180deg, #171717 0%, #141414 100%);
+    border-color: #2f3540;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  }
+
+  .ai-markdown-content {
+    color: rgba(255, 255, 255, 0.82);
+  }
+
+  .ai-markdown-content h1,
+  .ai-markdown-content h2,
+  .ai-markdown-content h3,
+  .ai-markdown-content strong {
+    color: rgba(255, 255, 255, 0.92);
+  }
+
+  .ai-markdown-content p,
+  .ai-markdown-content li {
+    color: rgba(255, 255, 255, 0.72);
+  }
+
+  .ai-markdown-content em {
+    color: rgba(255, 255, 255, 0.6);
+  }
+
+  .ai-markdown-content code {
+    background: rgba(255, 255, 255, 0.08);
+    color: #ff9c6e;
+  }
+
+  .ai-markdown-content blockquote {
+    background: rgba(23, 125, 220, 0.08);
+    border-left-color: rgba(23, 125, 220, 0.45);
+    color: rgba(255, 255, 255, 0.68);
+  }
 }
 </style>

@@ -592,12 +592,14 @@
       :strategyId="historyStrategyId"
       :runType="historyRunType"
       :isMobile="false"
+      :isDark="isDarkTheme"
       @cancel="showHistoryDrawer = false"
       @view="handleViewRun"
     />
     <backtest-run-viewer
       :visible="showRunViewer"
       :run="selectedRun"
+      :isDark="isDarkTheme"
       @cancel="showRunViewer = false; selectedRun = null"
     />
   </div>
