@@ -15,7 +15,7 @@ const locale = {
   'menu.welcome': 'ยินดีต้อนรับ',
   'menu.home': 'หน้าแรก',
   'menu.dashboard': 'แดชบอร์ด',
-  'menu.dashboard.indicator': 'การวิเคราะห์ตัวบ่งชี้',
+  'menu.dashboard.indicator': 'กราฟ & ตัวชี้วัด',
   'menu.dashboard.community': 'ชุมชนตัวบ่งชี้',
   'menu.dashboard.analysis': 'การวิเคราะห์เอไอ',
   'menu.dashboard.tradingAssistant': 'ผู้ช่วยการซื้อขาย',

@@ -15,7 +15,7 @@ const locale = {
   'menu.welcome': 'bienvenue',
   'menu.home': "Page d'accueil",
   'menu.dashboard': 'Tableau de bord',
-  'menu.dashboard.indicator': 'Analyse des indicateurs',
+  'menu.dashboard.indicator': 'Graphiques & indicateurs',
   'menu.dashboard.community': 'communauté des indicateurs',
   'menu.dashboard.analysis': "Analyse de l'IA",
   'menu.dashboard.tradingAssistant': 'Assistante commerciale',

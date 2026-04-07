@@ -14,7 +14,7 @@ const locale = {
   'menu.welcome': 'مرحبا بكم',
   'menu.home': 'الصفحة الرئيسية',
   'menu.dashboard': 'لوحة القيادة',
-  'menu.dashboard.indicator': 'تحليل المؤشر',
+  'menu.dashboard.indicator': 'الرسوم والمؤشرات',
   'menu.dashboard.community': 'مجتمع المؤشرات',
   'menu.dashboard.analysis': 'تحليل الذكاء الاصطناعي',
   'menu.dashboard.tradingAssistant': 'مساعد التداول',

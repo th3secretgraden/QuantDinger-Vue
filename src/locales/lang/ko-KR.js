@@ -14,7 +14,7 @@ const locale = {
   'menu.welcome': '환영합니다',
   'menu.home': '홈페이지',
   'menu.dashboard': '대시보드',
-  'menu.dashboard.indicator': '지표분석',
+  'menu.dashboard.indicator': '차트·지표',
   'menu.dashboard.community': '지표 커뮤니티',
   'menu.dashboard.analysis': 'AI 분석',
   'menu.dashboard.tradingAssistant': '트레이딩 어시스턴트',

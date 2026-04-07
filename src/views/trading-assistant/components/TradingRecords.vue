@@ -44,6 +44,7 @@
 
 <script>
 import { getStrategyTrades } from '@/api/strategy'
+import { formatUserDateTime } from '@/utils/userTime'
 
 export default {
   name: 'TradingRecords',
@@ -152,53 +153,8 @@ export default {
     },
     formatTime (time) {
       if (!time) return '--'
-
-      try {
-        let date
-
-        if (typeof time === 'number') {
-          // 数字类型：判断是秒级还是毫秒级时间戳
-          const timestampMs = time < 1e12 ? time * 1000 : time
-          date = new Date(timestampMs)
-        } else if (typeof time === 'string') {
-          // 字符串类型
-          if (/^\d+$/.test(time)) {
-            // 纯数字字符串（时间戳）
-            const timestamp = parseInt(time, 10)
-            const timestampMs = timestamp < 1e12 ? timestamp * 1000 : timestamp
-            date = new Date(timestampMs)
-          } else {
-            // ISO 日期字符串或其他格式，直接解析
-            date = new Date(time)
-          }
-        } else {
-          return '--'
-        }
-
-        // 检查日期是否有效
-        if (isNaN(date.getTime())) {
-          return '--'
-        }
-
-        // 使用24小时制格式化时间
-        const locale = this.$i18n.locale || 'zh-CN'
-        const localeMap = {
-          'zh-CN': 'zh-CN',
-          'zh-TW': 'zh-TW',
-          'en-US': 'en-US'
-        }
-        return date.toLocaleString(localeMap[locale] || 'zh-CN', {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-          hour12: false
-        })
-      } catch (e) {
-        return '--'
-      }
+      const loc = this.$i18n.locale || 'zh-CN'
+      return formatUserDateTime(time, { locale: loc, fallback: '--' })
     },
     // 获取交易类型颜色
     getTradeTypeColor (type) {

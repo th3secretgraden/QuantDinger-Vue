@@ -1039,6 +1039,8 @@ export default {
           // Order: USStock > Crypto > Forex > Futures
           marketTypes.value = [
             { value: 'USStock', i18nKey: 'dashboard.analysis.market.USStock' },
+            { value: 'CNStock', i18nKey: 'dashboard.analysis.market.CNStock' },
+            { value: 'HKStock', i18nKey: 'dashboard.analysis.market.HKStock' },
             { value: 'Crypto', i18nKey: 'dashboard.analysis.market.Crypto' },
             { value: 'Forex', i18nKey: 'dashboard.analysis.market.Forex' },
             { value: 'Futures', i18nKey: 'dashboard.analysis.market.Futures' }
@@ -1053,6 +1055,8 @@ export default {
         // Order: USStock > Crypto > Forex > Futures
         marketTypes.value = [
           { value: 'USStock', i18nKey: 'dashboard.analysis.market.USStock' },
+          { value: 'CNStock', i18nKey: 'dashboard.analysis.market.CNStock' },
+          { value: 'HKStock', i18nKey: 'dashboard.analysis.market.HKStock' },
           { value: 'Crypto', i18nKey: 'dashboard.analysis.market.Crypto' },
           { value: 'Forex', i18nKey: 'dashboard.analysis.market.Forex' },
           { value: 'Futures', i18nKey: 'dashboard.analysis.market.Futures' }
@@ -1919,6 +1923,8 @@ export default {
     const getMarketName = (market) => {
       const marketMap = {
         'USStock': 'dashboard.indicator.market.USStock',
+        'CNStock': 'dashboard.indicator.market.CNStock',
+        'HKStock': 'dashboard.indicator.market.HKStock',
         'Crypto': 'dashboard.indicator.market.Crypto',
         'Forex': 'dashboard.indicator.market.Forex',
         'Futures': 'dashboard.indicator.market.Futures'
@@ -1931,6 +1937,8 @@ export default {
     const getMarketColor = (market) => {
       const colors = {
         'USStock': 'green',
+        'CNStock': 'blue',
+        'HKStock': 'geekblue',
         'Crypto': 'purple',
         'Forex': 'gold',
         'Futures': 'cyan'

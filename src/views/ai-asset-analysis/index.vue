@@ -252,6 +252,8 @@ export default {
       const colors = {
         Crypto: 'purple',
         USStock: 'green',
+        CNStock: 'blue',
+        HKStock: 'geekblue',
         Forex: 'gold',
         PredictionMarket: 'cyan'
       }

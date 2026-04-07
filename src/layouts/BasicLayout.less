@@ -482,6 +482,35 @@
   }
 }
 
+/* ========== 侧栏菜单字体（系统 UI 栈 + 字重/字距，偏专业产品感）========== */
+:global {
+  .ant-pro-sider-menu-sider .ant-menu,
+  .ant-pro-sider .ant-menu.ant-menu-root,
+  .ant-layout-sider-children .ant-menu.ant-menu-root {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
+      'Microsoft YaHei UI', 'Source Han Sans SC', 'Noto Sans SC', sans-serif !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.02em !important;
+    -webkit-font-smoothing: antialiased !important;
+    -moz-osx-font-smoothing: grayscale !important;
+  }
+
+  .ant-pro-sider-menu-sider .ant-menu-item-selected > a,
+  .ant-pro-sider-menu-sider .ant-menu-item-selected .ant-menu-title-content,
+  .ant-pro-sider .ant-menu-item-selected {
+    font-weight: 600 !important;
+  }
+
+  .ant-pro-sider-menu-logo h1 {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
+      'Microsoft YaHei UI', sans-serif !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.03em !important;
+    -webkit-font-smoothing: antialiased !important;
+  }
+}
+
 /* 手机端适配 */
 @media (max-width: 768px) {
   :global {

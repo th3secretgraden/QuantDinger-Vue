@@ -23,7 +23,7 @@ const locale = {
 
   'menu.dashboard': 'Bảng điều khiển',
 
-  'menu.dashboard.indicator': 'Phân tích chỉ báo',
+  'menu.dashboard.indicator': 'Biểu đồ & chỉ báo',
 
   'menu.dashboard.community': 'Cộng đồng chỉ báo',
 

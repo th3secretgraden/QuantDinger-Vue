@@ -16,33 +16,33 @@ export const asyncRouterMap = [
         component: () => import('@/views/ai-asset-analysis'),
         meta: { title: 'menu.dashboard.aiAssetAnalysis', keepAlive: false, icon: 'appstore', permission: ['dashboard'] }
       },
-      // 2. 指标分析
+      // 2. 指标市场（浏览/购买指标，排在图表页之上）
+      {
+        path: '/indicator-community',
+        name: 'IndicatorCommunity',
+        component: () => import('@/views/indicator-community'),
+        meta: { title: 'menu.dashboard.community', keepAlive: false, icon: 'shop', permission: ['dashboard'] }
+      },
+      // 3. K 线图表与运行指标（原「指标分析」）
       {
         path: '/indicator-analysis',
         name: 'Indicator',
         component: () => import('@/views/indicator-analysis'),
         meta: { title: 'menu.dashboard.indicator', keepAlive: true, icon: 'line-chart', permission: ['dashboard'] }
       },
-      // 3. 回测中心
+      // 4. 回测中心
       {
         path: '/backtest-center',
         name: 'BacktestCenter',
         component: () => import('@/views/backtest-center'),
         meta: { title: 'menu.dashboard.backtestCenter', keepAlive: false, icon: 'experiment', permission: ['dashboard'] }
       },
-      // 4. 交易助手（含实盘概览 = 原仪表盘）
+      // 5. 交易助手（含实盘概览 = 原仪表盘）
       {
         path: '/trading-assistant',
         name: 'TradingAssistant',
         component: () => import('@/views/trading-assistant'),
         meta: { title: 'menu.dashboard.tradingAssistant', keepAlive: true, icon: 'robot', permission: ['dashboard'] }
-      },
-      // 5. 指标市场
-      {
-        path: '/indicator-community',
-        name: 'IndicatorCommunity',
-        component: () => import('@/views/indicator-community'),
-        meta: { title: 'menu.dashboard.community', keepAlive: false, icon: 'shop', permission: ['dashboard'] }
       },
       // 原仪表盘路由保留兼容，重定向到交易助手
       {

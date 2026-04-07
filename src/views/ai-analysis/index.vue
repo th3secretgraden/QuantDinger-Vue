@@ -150,6 +150,7 @@
               size="large"
               show-search
               allow-clear
+              option-label-prop="label"
               :filter-option="filterSymbolOption"
               @change="handleSymbolChange"
               class="symbol-selector"
@@ -158,11 +159,12 @@
                 v-for="stock in (watchlist || [])"
                 :key="`${stock.market}-${stock.symbol}`"
                 :value="`${stock.market}:${stock.symbol}`"
+                :label="watchlistSelectLabel(stock)"
               >
-                <span class="symbol-option">
+                <span class="symbol-option wl-select-option-row">
                   <a-tag :color="getMarketColor(stock.market)" size="small">{{ getMarketName(stock.market) }}</a-tag>
-                  <strong style="margin-left: 6px;">{{ stock.symbol }}</strong>
-                  <span v-if="stock.name" class="symbol-name">{{ stock.name }}</span>
+                  <strong class="wl-select-symbol">{{ stock.symbol }}</strong>
+                  <span v-if="stock.name" class="symbol-name wl-select-name">{{ stock.name }}</span>
                 </span>
               </a-select-option>
               <a-select-option key="add-stock-option" value="__add_stock_option__" class="add-stock-option">
@@ -960,10 +962,20 @@ export default {
         this.pollTaskResult()
       }, 2500)
     },
+    watchlistSelectLabel (stock) {
+      if (!stock) return ''
+      const sym = (stock.symbol || '').trim()
+      const nm = (stock.name || '').trim()
+      if (nm && nm !== sym) return `${sym} · ${nm}`
+      return sym
+    },
     filterSymbolOption (input, option) {
-      const value = option.componentOptions?.propsData?.value || ''
+      const props = option.componentOptions?.propsData || {}
+      const value = props.value || ''
       if (value === '__add_stock_option__') return true
-      return value.toLowerCase().includes(input.toLowerCase())
+      const q = (input || '').toLowerCase()
+      const label = (props.label || '').toString().toLowerCase()
+      return value.toLowerCase().includes(q) || (label && label.includes(q))
     },
     handleSymbolChange (value) {
       if (value === '__add_stock_option__') {
@@ -1528,6 +1540,8 @@ export default {
     getMarketColor (market) {
       const colors = {
         'USStock': 'green',
+        'CNStock': 'blue',
+        'HKStock': 'geekblue',
         'Crypto': 'purple',
         'Forex': 'gold',
         'Futures': 'cyan'
@@ -2069,6 +2083,8 @@ export default {
         } else {
           this.marketTypes = [
             { value: 'USStock', i18nKey: 'dashboard.analysis.market.USStock' },
+            { value: 'CNStock', i18nKey: 'dashboard.analysis.market.CNStock' },
+            { value: 'HKStock', i18nKey: 'dashboard.analysis.market.HKStock' },
             { value: 'Crypto', i18nKey: 'dashboard.analysis.market.Crypto' },
             { value: 'Forex', i18nKey: 'dashboard.analysis.market.Forex' },
             { value: 'Futures', i18nKey: 'dashboard.analysis.market.Futures' }
@@ -2077,6 +2093,8 @@ export default {
       } catch (error) {
         this.marketTypes = [
           { value: 'USStock', i18nKey: 'dashboard.analysis.market.USStock' },
+          { value: 'CNStock', i18nKey: 'dashboard.analysis.market.CNStock' },
+          { value: 'HKStock', i18nKey: 'dashboard.analysis.market.HKStock' },
           { value: 'Crypto', i18nKey: 'dashboard.analysis.market.Crypto' },
           { value: 'Forex', i18nKey: 'dashboard.analysis.market.Forex' },
           { value: 'Futures', i18nKey: 'dashboard.analysis.market.Futures' }
@@ -2429,6 +2447,33 @@ export default {
     .symbol-selector {
       flex: 1;
       max-width: 320px;
+    }
+
+    ::v-deep .symbol-selector {
+      .wl-select-option-row {
+        display: flex;
+        align-items: center;
+        flex-wrap: nowrap;
+        gap: 8px;
+        min-width: 0;
+      }
+      .wl-select-symbol {
+        flex: 0 0 auto;
+        margin-left: 0;
+      }
+      .wl-select-name {
+        flex: 1 1 auto;
+        min-width: 0;
+        margin-left: 0;
+        padding-left: 4px;
+        color: #8c8c8c;
+        font-size: 13px;
+        font-weight: 400;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        border-left: 1px solid #f0f0f0;
+      }
     }
 
     .analyze-button {
@@ -2983,6 +3028,10 @@ export default {
       background-color: #1c1c1c;
       border-color: #2a2a2a;
       color: #d4d4d4;
+    }
+    .wl-select-name {
+      color: #888 !important;
+      border-left-color: #333 !important;
     }
   }
 

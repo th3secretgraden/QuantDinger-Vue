@@ -15,7 +15,7 @@ const locale = {
   'menu.welcome': 'Willkommen',
   'menu.home': 'Startseite',
   'menu.dashboard': 'Armaturenbrett',
-  'menu.dashboard.indicator': 'Indikatorenanalyse',
+  'menu.dashboard.indicator': 'Charts & Indikatoren',
   'menu.dashboard.community': 'Indikatorgemeinschaft',
   'menu.dashboard.analysis': 'KI-Analyse',
   'menu.dashboard.tradingAssistant': 'Handelsassistent',

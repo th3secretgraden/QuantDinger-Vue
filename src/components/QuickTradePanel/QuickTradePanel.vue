@@ -148,7 +148,7 @@
     </div>
 
     <!-- Amount (USDT) -->
-    <div class="qt-section">
+    <div class="qt-section qt-amount-block">
       <div class="qt-label">{{ $t('quickTrade.amount') }} (USDT)</div>
       <a-input-number
         v-model="amount"
@@ -240,6 +240,7 @@
             :placeholder="$t('quickTrade.slPlaceholder')" />
         </div>
       </div>
+      <div class="qt-hint-text qt-tpsl-record-hint">{{ $t('quickTrade.tpslRecordOnlyHint') }}</div>
     </div>
 
     <!-- Submit Button -->
@@ -260,52 +261,68 @@
       </a-button>
     </div>
 
-    <!-- Current Position (if any) -->
+    <!-- Current Positions (all legs for selected symbol) -->
     <div class="qt-position-section">
       <div class="qt-section-header">
         <a-icon type="wallet" /> {{ $t('quickTrade.currentPosition') }}
+        <span v-if="currentPositions.length > 1" class="qt-position-count">({{ currentPositions.length }})</span>
       </div>
-      <div v-if="currentPosition" class="qt-position-card" :class="currentPosition.side">
-        <div class="qt-pos-row">
-          <span>{{ $t('quickTrade.side') }}</span>
-          <a-tag :color="currentPosition.side === 'long' ? '#52c41a' : '#f5222d'" size="small">
-            {{ currentPosition.side === 'long' ? $t('quickTrade.long') : $t('quickTrade.short') }}
-          </a-tag>
+      <template v-if="currentPositions.length > 0">
+        <div v-if="isSwapMode" class="qt-close-scope qt-close-scope-global">
+          <div class="qt-label qt-label-close-scope">{{ $t('quickTrade.closeScopeLabel') }}</div>
+          <a-radio-group v-model="closeScope" size="small" class="qt-close-scope-radio">
+            <a-radio-button value="full">{{ $t('quickTrade.closeScopeFull') }}</a-radio-button>
+            <a-radio-button value="system_tracked">{{ $t('quickTrade.closeScopeSystem') }}</a-radio-button>
+          </a-radio-group>
+          <div class="qt-hint-text">{{ $t('quickTrade.closeScopeSystemHint') }}</div>
         </div>
-        <div class="qt-pos-row">
-          <span>{{ $t('quickTrade.posSize') }}</span>
-          <span>{{ currentPosition.size }}</span>
-        </div>
-        <div class="qt-pos-row">
-          <span>{{ $t('quickTrade.entryPrice') }}</span>
-          <span>${{ formatPrice(currentPosition.entry_price) }}</span>
-        </div>
-        <div class="qt-pos-row" v-if="currentPosition.mark_price">
-          <span>{{ $t('quickTrade.markPrice') }}</span>
-          <span>${{ formatPrice(currentPosition.mark_price) }}</span>
-        </div>
-        <div class="qt-pos-row" v-if="currentPosition.leverage && currentPosition.leverage > 1">
-          <span>{{ $t('quickTrade.leverage') }}</span>
-          <span>{{ currentPosition.leverage }}x</span>
-        </div>
-        <div class="qt-pos-row">
-          <span>{{ $t('quickTrade.unrealizedPnl') }}</span>
-          <span :class="currentPosition.unrealized_pnl >= 0 ? 'qt-green' : 'qt-red'">
-            ${{ formatPrice(currentPosition.unrealized_pnl) }}
-          </span>
-        </div>
-        <a-button
-          type="danger"
-          size="small"
-          block
-          ghost
-          @click="handleClosePosition"
-          :loading="closingPosition"
-          style="margin-top: 8px;"
+        <div
+          v-for="(pos, idx) in currentPositions"
+          :key="'pos-' + idx + '-' + (pos.side || '') + '-' + String(pos.size || '')"
+          class="qt-position-card"
+          :class="pos.side"
         >
-          {{ $t('quickTrade.closePosition') }}
-        </a-button>
-      </div>
+          <div class="qt-pos-row">
+            <span>{{ $t('quickTrade.side') }}</span>
+            <a-tag :color="pos.side === 'long' ? '#52c41a' : '#f5222d'" size="small">
+              {{ pos.side === 'long' ? $t('quickTrade.long') : $t('quickTrade.short') }}
+            </a-tag>
+          </div>
+          <div class="qt-pos-row">
+            <span>{{ $t('quickTrade.posSize') }}</span>
+            <span>{{ pos.size }}</span>
+          </div>
+          <div class="qt-pos-row">
+            <span>{{ $t('quickTrade.entryPrice') }}</span>
+            <span>${{ formatPrice(pos.entry_price) }}</span>
+          </div>
+          <div class="qt-pos-row" v-if="pos.mark_price">
+            <span>{{ $t('quickTrade.markPrice') }}</span>
+            <span>${{ formatPrice(pos.mark_price) }}</span>
+          </div>
+          <div class="qt-pos-row" v-if="pos.leverage && pos.leverage > 1">
+            <span>{{ $t('quickTrade.leverage') }}</span>
+            <span>{{ pos.leverage }}x</span>
+          </div>
+          <div class="qt-pos-row">
+            <span>{{ $t('quickTrade.unrealizedPnl') }}</span>
+            <span :class="pos.unrealized_pnl >= 0 ? 'qt-green' : 'qt-red'">
+              ${{ formatPrice(pos.unrealized_pnl) }}
+            </span>
+          </div>
+          <a-button
+            type="danger"
+            size="small"
+            block
+            ghost
+            @click="handleClosePosition(pos)"
+            :loading="closingPositionSide === pos.side"
+            style="margin-top: 8px;"
+          >
+            {{ $t('quickTrade.closePosition') }}
+          </a-button>
+        </div>
+      </template>
       <div v-else class="qt-position-empty">
         <a-icon type="inbox" class="qt-empty-icon" />
         <span class="qt-empty-desc">{{ $t('quickTrade.noPositionHint') }}</span>
@@ -390,11 +407,12 @@ export default {
       slPrice: null,
       // state
       submitting: false,
-      closingPosition: false,
+      closingPositionSide: null, // 'long' | 'short' | null — which leg is closing
       currentPrice: 0,
-      currentPosition: null,
+      currentPositions: [],
       recentTrades: [],
-      historyCollapsed: false, // 交易记录折叠状态
+      historyCollapsed: true, // 交易记录默认折叠
+      closeScope: 'full', // full | system_tracked（合约一键平仓范围）
       // symbol search
       currentSymbol: '',
       symbolSuggestions: [],
@@ -740,17 +758,17 @@ export default {
         })
         console.log('Position response:', res)
         if (res.code === 1 && res.data && res.data.positions && res.data.positions.length > 0) {
-          this.currentPosition = res.data.positions[0]
-          console.log('Position loaded:', this.currentPosition)
-          return true // Return true if position found
+          this.currentPositions = res.data.positions
+          console.log('Positions loaded:', this.currentPositions.length)
+          return true
         } else {
-          this.currentPosition = null
+          this.currentPositions = []
           console.log('No position found')
-          return false // Return false if no position
+          return false
         }
       } catch (e) {
         console.error('loadPosition error:', e)
-        this.currentPosition = null
+        this.currentPositions = []
         return false
       }
     },
@@ -815,45 +833,62 @@ export default {
           // Load position with retry mechanism (exchange may need time to update)
           await this.loadPositionWithRetry()
         } else {
-          this.$message.error(res.msg || this.$t('quickTrade.orderFailed'))
+          const hint = res.error_hint ? this.$t(res.error_hint) : ''
+          this.$notification.error({
+            message: this.$t('quickTrade.orderFailed'),
+            description: hint || res.msg || ''
+          })
         }
       } catch (e) {
-        this.$message.error(e.message || this.$t('quickTrade.orderFailed'))
+        const rd = (e && e.response && e.response.data) || {}
+        const hint = rd.error_hint ? this.$t(rd.error_hint) : ''
+        this.$notification.error({
+          message: this.$t('quickTrade.orderFailed'),
+          description: hint || rd.msg || e.message || ''
+        })
       } finally {
         this.submitting = false
       }
     },
-    async handleClosePosition () {
-      if (!this.currentPosition || !this.selectedCredentialId) return
-      this.closingPosition = true
+    async handleClosePosition (pos) {
+      if (!pos || !this.selectedCredentialId || !this.currentSymbol) return
+      const leg = (pos.side || '').toLowerCase()
+      this.closingPositionSide = leg || null
       try {
-        // Use the new close-position API
         const payload = {
           credential_id: this.selectedCredentialId,
           symbol: this.currentSymbol,
           market_type: this.effectiveMarketType,
-          size: 0, // 0 means close full position
+          size: 0,
+          close_scope: this.isSwapMode ? this.closeScope : 'full',
+          position_side: leg,
           source: 'manual'
         }
         const res = await closeQuickTradePosition(payload)
         if (res.code === 1) {
           this.$message.success(this.$t('quickTrade.positionClosed'))
-          // Reload all data after closing position
           await this.loadBalance()
           await this.loadHistory()
-          // Clear position immediately, then verify after delay
-          this.currentPosition = null
-          // Verify position is closed after a delay (exchange may need time to update)
+          this.currentPositions = this.currentPositions.filter(p => (p.side || '').toLowerCase() !== leg)
           setTimeout(async () => {
             await this.loadPosition()
           }, 2000)
         } else {
-          this.$message.error(res.msg || this.$t('quickTrade.orderFailed'))
+          const hint = res.error_hint ? this.$t(res.error_hint) : ''
+          this.$notification.error({
+            message: this.$t('quickTrade.orderFailed'),
+            description: hint || res.msg || ''
+          })
         }
       } catch (e) {
-        this.$message.error(e.message || this.$t('quickTrade.orderFailed'))
+        const rd = (e && e.response && e.response.data) || {}
+        const hint = rd.error_hint ? this.$t(rd.error_hint) : ''
+        this.$notification.error({
+          message: this.$t('quickTrade.orderFailed'),
+          description: hint || rd.msg || e.message || ''
+        })
       } finally {
-        this.closingPosition = false
+        this.closingPositionSide = null
       }
     },
     startPolling () {
@@ -1077,10 +1112,15 @@ export default {
   }
 }
 
+.qt-amount-block {
+  padding-bottom: 14px;
+}
+
 .qt-quick-amounts {
   display: flex;
   gap: 6px;
-  margin-top: 6px;
+  margin-top: 8px;
+  margin-bottom: 4px;
   button { flex: 1; font-size: 12px; }
 }
 
@@ -1100,6 +1140,14 @@ export default {
   border-radius: 10px;
   background: #f5f5f5;
   border: 1px solid #e8e8e8;
+}
+
+.qt-mode-card {
+  margin-top: 16px;
+}
+
+.qt-tpsl-card {
+  margin-top: 16px;
 }
 
 .qt-section-title-row {
@@ -1188,6 +1236,32 @@ export default {
   .qt-tpsl-item { flex: 1; }
 }
 
+.qt-tpsl-record-hint {
+  margin-top: 10px;
+  margin-bottom: 0;
+}
+
+.qt-close-scope {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed #e8e8e8;
+}
+
+.qt-label-close-scope {
+  margin-bottom: 6px;
+}
+
+.qt-close-scope-radio {
+  width: 100%;
+  display: flex;
+  /deep/ .ant-radio-button-wrapper {
+    flex: 1;
+    text-align: center;
+    padding: 0 4px;
+    font-size: 12px;
+  }
+}
+
 .qt-tp-label {
   color: #389e0d !important;
 }
@@ -1252,6 +1326,14 @@ export default {
     align-items: center;
     gap: 6px;
   }
+  .qt-position-count {
+    font-size: 12px;
+    color: #999;
+    font-weight: 400;
+  }
+  .qt-close-scope-global {
+    margin-bottom: 10px;
+  }
 }
 
 .qt-history-section {
@@ -1298,6 +1380,9 @@ export default {
   border-radius: 8px;
   padding: 10px 12px;
   border-left: 3px solid #d9d9d9;
+  & + .qt-position-card {
+    margin-top: 10px;
+  }
   &.long { border-left-color: #52c41a; }
   &.short { border-left-color: #f5222d; }
   .qt-pos-row {
@@ -1371,6 +1456,10 @@ export default {
   }
   .qt-section {
     .qt-label { color: #777; }
+  }
+  .qt-position-section {
+    .qt-section-header { color: #ccc; }
+    .qt-position-count { color: #888; }
   }
   .qt-position-card {
     background: #262626;
@@ -1466,6 +1555,10 @@ export default {
   .qt-sl-label {
     color: #ff7875 !important;
   }
+  .qt-close-scope {
+    border-top-color: #3a3a3a;
+  }
+
   .qt-position-empty {
     background: #262626;
     border-color: #303030;

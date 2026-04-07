@@ -15,7 +15,7 @@ const locale = {
   'menu.welcome': 'ようこそ',
   'menu.home': 'ホームページ',
   'menu.dashboard': 'ダッシュボード',
-  'menu.dashboard.indicator': '指標分析',
+  'menu.dashboard.indicator': 'チャート・インジケータ',
   'menu.dashboard.community': 'インジケーターコミュニティ',
   'menu.dashboard.analysis': 'AI分析',
   'menu.dashboard.tradingAssistant': '取引アシスタント',

@@ -516,6 +516,7 @@
 import * as echarts from 'echarts'
 import { getDashboardSummary, getPendingOrders } from '@/api/dashboard'
 import { mapState } from 'vuex'
+import { formatUserDateTime } from '@/utils/userTime'
 
 export default {
   name: 'Dashboard',
@@ -1048,24 +1049,9 @@ export default {
     },
     formatTime (timestamp) {
       if (!timestamp) return '-'
-      try {
-        let date
-        // Handle ISO 8601 date strings (e.g., "2024-01-17T01:58:10.000Z")
-        if (typeof timestamp === 'string' && timestamp.includes('-') && timestamp.includes(':')) {
-          date = new Date(timestamp)
-        } else if (typeof timestamp === 'number' || (typeof timestamp === 'string' && /^\d+$/.test(timestamp))) {
-          // Handle numeric timestamps (seconds or milliseconds)
-          const numTimestamp = typeof timestamp === 'string' ? parseInt(timestamp, 10) : timestamp
-          const ms = numTimestamp < 1e12 ? numTimestamp * 1000 : numTimestamp
-          date = new Date(ms)
-        } else {
-          return '-'
-        }
-        if (isNaN(date.getTime())) return '-'
-        return date.toLocaleString()
-      } catch (e) {
-        return '-'
-      }
+      const loc = (this.$i18n && this.$i18n.locale) ? this.$i18n.locale : 'zh-CN'
+      const s = formatUserDateTime(timestamp, { locale: loc, fallback: '-' })
+      return s || '-'
     },
     initCharts () {
       this.initPieChart()
@@ -1521,26 +1507,32 @@ export default {
       }
     }
 
-    .ranking-card {
-      background: rgba(255, 255, 255, 0.03);
-      border-color: @border-dark;
-
-      .rank-name { color: @text-primary-dark; }
-      .rank-stats label { color: @text-secondary-dark; }
-    }
-
     .calendar-nav {
       .current-month { color: @text-primary-dark; }
       .ant-btn-link { color: @text-secondary-dark; }
     }
 
     .profit-calendar {
-      .calendar-empty { color: @text-secondary-dark; }
+      .calendar-empty {
+        color: @text-secondary-dark;
+
+        .anticon {
+          color: @text-secondary-dark;
+          opacity: 0.45;
+        }
+      }
 
       .month-summary {
-        background: rgba(255, 255, 255, 0.03);
+        background: rgba(255, 255, 255, 0.04);
 
         .summary-label { color: @text-secondary-dark; }
+
+        .summary-value {
+          color: @text-primary-dark;
+
+          &.positive { color: @green-light; }
+          &.negative { color: @red-light; }
+        }
       }
 
       .calendar-weekdays .weekday { color: @text-secondary-dark; }
@@ -1563,7 +1555,68 @@ export default {
         }
 
         .day-number { color: @text-primary-dark; }
+
+        .day-profit {
+          &.positive { color: @green-light; }
+          &.negative { color: @red-light; }
+        }
       }
+    }
+
+    .strategy-ranking {
+      .empty-state {
+        color: @text-secondary-dark;
+
+        .anticon {
+          color: @text-secondary-dark;
+          opacity: 0.45;
+        }
+      }
+
+      .ranking-card {
+        background: rgba(255, 255, 255, 0.04);
+        border-color: @border-dark;
+
+        .rank-name {
+          color: @text-primary-dark;
+        }
+
+        .rank-stats label {
+          color: @text-secondary-dark;
+        }
+
+        &.rank-top {
+          background: linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(139, 92, 246, 0.1) 100%);
+          border-color: rgba(59, 130, 246, 0.22);
+        }
+
+        .rank-badge:not(.rank-1):not(.rank-2):not(.rank-3) {
+          background: @text-secondary-dark;
+          color: #f8fafc;
+        }
+
+        .rank-stats .stat span {
+          color: @text-primary-dark;
+        }
+
+        .rank-stats .stat span.positive {
+          color: @green-light;
+        }
+
+        .rank-stats .stat span.negative {
+          color: @red-light;
+        }
+
+        .rank-pnl-bar {
+          background: rgba(255, 255, 255, 0.06);
+        }
+      }
+    }
+
+    .chart-panel .panel-legend {
+      color: @text-secondary-dark;
+
+      .legend-item .dot { opacity: 0.95; }
     }
 
     .pro-table {
@@ -1588,6 +1641,10 @@ export default {
         .ant-empty-description { color: @text-secondary-dark; }
       }
       ::v-deep .ant-pagination {
+        .ant-pagination-total-text {
+          color: @text-secondary-dark !important;
+        }
+
         .ant-pagination-item {
           background: @bg-card-dark;
           border-color: @border-dark;
@@ -1595,6 +1652,7 @@ export default {
           &.ant-pagination-item-active {
             background: @blue;
             border-color: @blue;
+            a { color: #fff; }
           }
         }
         .ant-pagination-prev, .ant-pagination-next {
@@ -1602,6 +1660,28 @@ export default {
             background: @bg-card-dark;
             border-color: @border-dark;
             color: @text-primary-dark;
+          }
+        }
+
+        .ant-pagination-options {
+          .ant-pagination-options-size-changer .ant-select-selection {
+            background: @bg-card-dark;
+            border-color: @border-dark;
+            color: @text-primary-dark;
+          }
+
+          .ant-select-selection__rendered {
+            color: @text-primary-dark;
+          }
+
+          .ant-pagination-options-quick-jumper {
+            color: @text-secondary-dark;
+
+            input {
+              background: @bg-card-dark;
+              border-color: @border-dark;
+              color: @text-primary-dark;
+            }
           }
         }
       }

@@ -121,11 +121,20 @@ def on_bar(ctx, bar):
     key: 'grid',
     icon: '📐',
     code: `"""
-Grid Trading Strategy
-Places buy/sell orders at equal intervals within a price range.
+Grid-style strategy (K-line / bar simulation).
+
+Unlike an exchange-native grid that pre-places many limit orders on the book, this template
+evaluates once per CLOSED bar: if the close crosses a grid cell edge, it emits buy/sell actions.
+Live behavior still depends on trade_direction (long / short / both) and spot vs futures.
+
+grid_mode:
+- neutral: buy on dips into a cell, sell when price moves up out of a filled cell (futures+both may open shorts after flat)
+- long: long-biased grid; prefer trade_direction=long (spot is always long-only)
+- short: short-biased grid (sell to open on rallies, buy to cover on dips); prefer trade_direction=short or both
 """
 
 def on_init(ctx):
+    ctx.grid_mode = ctx.param('grid_mode', 'neutral')
     ctx.grid_upper = ctx.param('grid_upper', 70000)
     ctx.grid_lower = ctx.param('grid_lower', 60000)
     ctx.grid_levels = ctx.param('grid_levels', 10)
@@ -139,28 +148,52 @@ def on_init(ctx):
 
 def on_bar(ctx, bar):
     price = bar['close']
+    mode = str(ctx.grid_mode or 'neutral').lower()
+    if mode not in ('neutral', 'long', 'short'):
+        mode = 'neutral'
+
     if price < ctx.grid_lower or price > ctx.grid_upper:
         return
 
-    if ctx.position and ctx.position['side'] == 'long':
-        entry = ctx.position['entry_price']
-        pnl_pct = (price - entry) / entry
-        if pnl_pct >= ctx.take_profit_pct or pnl_pct <= -ctx.stop_loss_pct:
+    if ctx.position:
+        side = ctx.position.get('side') or ''
+        entry = float(ctx.position.get('entry_price') or 0)
+        if side == 'long' and entry > 0:
+            pnl_pct = (price - entry) / entry
+        elif side == 'short' and entry > 0:
+            pnl_pct = (entry - price) / entry
+        else:
+            pnl_pct = 0.0
+        if side in ('long', 'short') and (pnl_pct >= ctx.take_profit_pct or pnl_pct <= -ctx.stop_loss_pct):
             ctx.close_position()
             ctx.filled_grids.clear()
             ctx.log(f"Grid risk exit at {price:.2f}, pnl={pnl_pct:.2%}")
             return
 
+    if mode == 'short':
+        for i, gp in enumerate(ctx.grid_prices[:-1]):
+            upper_gp = ctx.grid_prices[i + 1]
+            grid_id = f"grid_{i}"
+            if price >= upper_gp and grid_id not in ctx.filled_grids:
+                qty = ctx.order_amount / price
+                ctx.sell(price, qty)
+                ctx.filled_grids.add(grid_id)
+                ctx.log(f"Grid SHORT add at {price:.2f} (level {i})")
+            elif price <= gp and grid_id in ctx.filled_grids:
+                qty = ctx.order_amount / price
+                ctx.buy(price, qty)
+                ctx.filled_grids.discard(grid_id)
+                ctx.log(f"Grid SHORT cover at {price:.2f} (level {i})")
+        return
+
     for i, gp in enumerate(ctx.grid_prices[:-1]):
         upper_gp = ctx.grid_prices[i + 1]
         grid_id = f"grid_{i}"
-
         if price <= gp and grid_id not in ctx.filled_grids:
             qty = ctx.order_amount / price
             ctx.buy(price, qty)
             ctx.filled_grids.add(grid_id)
             ctx.log(f"Grid BUY at {price:.2f} (level {i})")
-
         elif price >= upper_gp and grid_id in ctx.filled_grids:
             qty = ctx.order_amount / price
             ctx.sell(price, qty)
@@ -168,6 +201,16 @@ def on_bar(ctx, bar):
             ctx.log(f"Grid SELL at {price:.2f} (level {i})")
 `,
     params: [
+      {
+        name: 'grid_mode',
+        type: 'select',
+        default: 'neutral',
+        options: [
+          { value: 'neutral', labelKey: 'trading-assistant.templateParam.grid_mode.optionNeutral' },
+          { value: 'long', labelKey: 'trading-assistant.templateParam.grid_mode.optionLong' },
+          { value: 'short', labelKey: 'trading-assistant.templateParam.grid_mode.optionShort' }
+        ]
+      },
       { name: 'grid_upper', type: 'number', default: 70000, min: 1, max: 100000000, step: 10 },
       { name: 'grid_lower', type: 'number', default: 60000, min: 1, max: 100000000, step: 10 },
       { name: 'grid_levels', type: 'integer', default: 10, min: 2, max: 200, step: 1 },

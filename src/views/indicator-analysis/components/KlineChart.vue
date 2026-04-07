@@ -247,44 +247,21 @@ export default {
       activeDrawingTool.value = toolName
 
       try {
-        // 对于自定义覆盖物（如 priceRangeMeasure），需要使用 overrideOverlay 来进入绘制模式
-        // 对于内置覆盖物，使用 createOverlay
-        // signalTag 不应该通过绘制工具创建，所以不包含在这里
-        const customOverlays = ['priceRangeMeasure']
-
-        if (customOverlays.includes(overlayName)) {
-          // 自定义覆盖物：使用 overrideOverlay 进入绘制模式
-          if (typeof chartRef.value.overrideOverlay === 'function') {
-            chartRef.value.overrideOverlay({
-              name: overlayName,
-              lock: false
-            })
-            // overrideOverlay 不会返回 ID，需要等待用户绘制完成后通过 onOverlayCreated 事件获取
-            // 这里先标记为已激活，等待绘制完成
-          } else {
-            console.warn(`overrideOverlay not available for ${overlayName}`)
-            activeDrawingTool.value = null
-            return
+        // klinecharts v9：overrideOverlay 只更新已存在的覆盖物，不会进入绘制模式。
+        // 自定义 priceRangeMeasure 与内置工具一样，用 createOverlay（无 points）即可进入逐步取点绘制。
+        const overlayConfig = {
+          name: overlayName,
+          lock: false,
+          extendData: {
+            isDrawing: true
           }
+        }
+        const overlayId = chartRef.value.createOverlay(overlayConfig)
+        if (overlayId) {
+          addedDrawingOverlayIds.value.push(overlayId)
         } else {
-          // 内置覆盖物：使用 createOverlay
-          const overlayConfig = {
-            name: overlayName,
-            lock: false, // 允许编辑
-            extendData: {
-              isDrawing: true // 标记为正在绘制
-            }
-          }
-
-          // 调用 createOverlay 且不传 points，库会自动进入绘制模式
-          const overlayId = chartRef.value.createOverlay(overlayConfig)
-
-          if (overlayId) {
-            addedDrawingOverlayIds.value.push(overlayId)
-          } else {
-            console.warn(`Failed to create overlay: ${overlayName}. Make sure the overlay is registered.`)
-            activeDrawingTool.value = null
-          }
+          console.warn(`Failed to create overlay: ${overlayName}. Make sure the overlay is registered.`)
+          activeDrawingTool.value = null
         }
       } catch (err) {
         console.error(`Error selecting drawing tool ${toolName} (${overlayName}):`, err)
