@@ -170,17 +170,28 @@
             </div>
           </div>
 
-          <!-- Leverage & margin (合约：杠杆>1；1×=现货) -->
+          <!-- Mode & Leverage -->
           <div class="qt-section qt-card qt-mode-card">
-            <template v-if="isSwapMode">
-              <div class="qt-section-title-row">
-                <span class="qt-section-title">{{ $t('quickTrade.leverage') }}</span>
-                <span class="qt-badge-contract">{{ $t('quickTrade.contractBadge') }}</span>
+            <div class="qt-section-title-row">
+              <span class="qt-section-title">{{ isSwapMode ? $t('quickTrade.leverage') : $t('quickTrade.spotModeTitle') }}</span>
+              <div class="qt-mode-toggle">
+                <div
+                  class="qt-mode-toggle-item"
+                  :class="{ active: tradeMode === 'swap' }"
+                  @click="tradeMode = 'swap'"
+                >{{ $t('quickTrade.contractBadge') }}</div>
+                <div
+                  class="qt-mode-toggle-item"
+                  :class="{ active: tradeMode === 'spot' }"
+                  @click="tradeMode = 'spot'"
+                >{{ $t('quickTrade.spotModeTitle') }}</div>
               </div>
+            </div>
+            <template v-if="isSwapMode">
               <div class="qt-leverage-row">
                 <a-slider
                   v-model="leverage"
-                  :min="1"
+                  :min="2"
                   :max="125"
                   :marks="leverageMarks"
                   :tipFormatter="v => v + 'x'"
@@ -188,7 +199,7 @@
                 />
                 <a-input-number
                   v-model="leverage"
-                  :min="1"
+                  :min="2"
                   :max="125"
                   :formatter="v => `${v}x`"
                   :parser="v => String(v).replace('x', '')"
@@ -202,13 +213,12 @@
               </a-radio-group>
               <div class="qt-hint-text">{{ $t('quickTrade.marginModeHint') }}</div>
             </template>
-            <div v-else class="qt-spot-banner">
-              <a-icon type="wallet" class="qt-spot-banner-icon" />
-              <div class="qt-spot-banner-text">
-                <div class="qt-spot-banner-title">{{ $t('quickTrade.spotModeTitle') }}</div>
-                <div class="qt-hint-text">{{ $t('quickTrade.spotModeHint') }}</div>
+            <template v-else>
+              <div class="qt-spot-info">
+                <a-icon type="wallet" class="qt-spot-info-icon" />
+                <span class="qt-hint-text">{{ $t('quickTrade.spotModeHint') }}</span>
               </div>
-            </div>
+            </template>
           </div>
 
           <!-- TP / SL (optional, always expanded) -->
@@ -410,6 +420,7 @@ export default {
       limitPrice: 0,
       amount: 100,
       leverage: 5,
+      tradeMode: 'swap',
       marginMode: 'cross',
       tpPrice: null,
       slPrice: null,
@@ -429,7 +440,7 @@ export default {
       userId: null, // 用户ID，用于获取自选列表
       // constants
       quickAmountPcts: [10, 25, 50, 75, 100],
-      leverageMarks: { 1: '1x', 5: '5x', 10: '10x', 25: '25x', 50: '50x', 100: '100x', 125: '125x' },
+      leverageMarks: { 2: '2x', 5: '5x', 10: '10x', 25: '25x', 50: '50x', 100: '100x', 125: '125x' },
       // polling
       pollTimer: null,
       showAddExchangeModal: false
@@ -442,12 +453,11 @@ export default {
     isDark () {
       return this.navTheme === 'dark' || this.navTheme === 'realdark'
     },
-    /** 杠杆 1× → 现货；≥2× → 合约（与后端 quick_trade 一致） */
     isSwapMode () {
-      return Number(this.leverage) > 1
+      return this.tradeMode === 'swap'
     },
     effectiveMarketType () {
-      return this.isSwapMode ? 'swap' : 'spot'
+      return this.tradeMode
     },
     priceStep () {
       if (this.currentPrice > 10000) return 1
@@ -532,7 +542,15 @@ export default {
       }
     },
     leverage () {
-      if (!this.isSwapMode && this.side === 'sell') {
+      this.$nextTick(() => {
+        if (this.selectedCredentialId) {
+          this.loadBalance()
+          this.loadPosition()
+        }
+      })
+    },
+    tradeMode (val) {
+      if (val === 'spot' && this.side === 'sell') {
         this.side = 'buy'
       }
       this.$nextTick(() => {
@@ -563,7 +581,7 @@ export default {
       this.currentSymbol = this.symbol || ''
       if (this.presetSide) this.side = this.presetSide
       if (this.marketType === 'spot') {
-        this.leverage = 1
+        this.tradeMode = 'spot'
       }
       if (this.presetPrice > 0) {
         this.currentPrice = this.presetPrice
@@ -1442,27 +1460,43 @@ export default {
   margin-top: 6px;
 }
 
-.qt-spot-banner {
+.qt-mode-toggle {
   display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 4px 0;
+  background: #f0f0f0;
+  border-radius: 6px;
+  padding: 2px;
+  gap: 2px;
 }
-
-.qt-spot-banner-icon {
-  font-size: 22px;
+.qt-mode-toggle-item {
+  padding: 2px 10px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #8c8c8c;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  user-select: none;
+  white-space: nowrap;
+  &:hover { color: #595959; }
+  &.active {
+    background: #fff;
+    color: #1890ff;
+    font-weight: 600;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  }
+}
+.qt-spot-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0 2px;
+}
+.qt-spot-info-icon {
+  font-size: 18px;
   color: #52c41a;
-  margin-top: 2px;
+  flex-shrink: 0;
 }
-
-.qt-spot-banner-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 4px;
-}
-
-.qt-spot-banner-text .qt-hint-text {
+.qt-spot-info .qt-hint-text {
   margin-top: 0;
 }
 
@@ -1814,10 +1848,19 @@ export default {
   .qt-hint-text {
     color: #777;
   }
-  .qt-spot-banner-title {
-    color: #e0e0e0;
+  .qt-mode-toggle {
+    background: #2a2a2a;
   }
-  .qt-spot-banner-icon {
+  .qt-mode-toggle-item {
+    color: #777;
+    &:hover { color: #bbb; }
+    &.active {
+      background: #3a3a3a;
+      color: #58a6ff;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    }
+  }
+  .qt-spot-info-icon {
     color: #73d13d;
   }
   .qt-tp-label {

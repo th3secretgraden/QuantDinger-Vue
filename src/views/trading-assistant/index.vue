@@ -386,14 +386,13 @@
                     <div class="key-stats-grid">
                       <div
                         class="stat-card"
-                        v-if="selectedStrategy.initial_capital || (selectedStrategy.trading_config && selectedStrategy.trading_config.initial_capital)">
+                        v-if="strategyInitialCapital != null">
                         <div class="stat-icon investment">
                           <a-icon type="wallet" />
                         </div>
                         <div class="stat-content">
                           <div class="stat-label">{{ $t('trading-assistant.detail.totalInvestment') }}</div>
-                          <div class="stat-value">${{ parseFloat((selectedStrategy.initial_capital ||
-                            selectedStrategy.trading_config?.initial_capital) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</div>
+                          <div class="stat-value">${{ strategyInitialCapital.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</div>
                         </div>
                       </div>
                       <div class="stat-card" v-if="currentEquity !== null">
@@ -1431,7 +1430,6 @@ const EXCHANGE_OPTIONS = [
   { value: 'kraken', labelKey: 'kraken' },
   { value: 'kucoin', labelKey: 'kucoin' },
   { value: 'gate', labelKey: 'gate' },
-  { value: 'bitfinex', labelKey: 'bitfinex' },
   { value: 'deepcoin', labelKey: 'deepcoin' }
 ]
 
@@ -1560,18 +1558,31 @@ export default {
         }
       })
     },
+    /** 与头部「投入资金」展示一致：优先 trading_config.initial_capital */
+    strategyInitialCapital () {
+      const s = this.selectedStrategy
+      if (!s) return null
+      const raw = s.initial_capital != null && s.initial_capital !== ''
+        ? s.initial_capital
+        : (s.trading_config && s.trading_config.initial_capital != null && s.trading_config.initial_capital !== ''
+          ? s.trading_config.initial_capital
+          : null)
+      if (raw == null) return null
+      const n = parseFloat(raw)
+      return isNaN(n) ? null : n
+    },
     totalPnl () {
-      if (this.currentEquity === null || !this.selectedStrategy || !this.selectedStrategy.initial_capital) {
+      if (this.currentEquity === null || !this.selectedStrategy || this.strategyInitialCapital == null) {
         return null
       }
-      return this.currentEquity - (this.selectedStrategy.initial_capital || 0)
+      return this.currentEquity - this.strategyInitialCapital
     },
     totalPnlPercent () {
-      if (this.totalPnl === null || !this.selectedStrategy || !this.selectedStrategy.initial_capital) {
+      if (this.totalPnl === null || this.strategyInitialCapital == null) {
         return null
       }
-      if (this.selectedStrategy.initial_capital === 0) return 0
-      return (this.totalPnl / this.selectedStrategy.initial_capital) * 100
+      if (this.strategyInitialCapital === 0) return 0
+      return (this.totalPnl / this.strategyInitialCapital) * 100
     },
     getEquityColorClass () {
       if (this.totalPnl === null) return ''
@@ -1610,7 +1621,7 @@ export default {
       const exchangeId = this.currentExchangeId || ''
       // Crypto markets use crypto exchanges
       if (String(cat).toLowerCase() === 'crypto') {
-        return ['binance', 'okx', 'bitget', 'bybit', 'coinbaseexchange', 'kraken', 'kucoin', 'gate', 'bitfinex'].includes(exchangeId)
+        return ['binance', 'okx', 'bitget', 'bybit', 'coinbaseexchange', 'kraken', 'kucoin', 'gate'].includes(exchangeId)
       }
       // USStock uses IBKR
       if (cat === 'USStock') {
@@ -2460,7 +2471,7 @@ export default {
       }
 
       // Crypto exchanges can only be used for Crypto
-      const cryptoExchanges = ['binance', 'okx', 'bitget', 'bybit', 'coinbaseexchange', 'kraken', 'kucoin', 'gate', 'bitfinex', 'deepcoin']
+      const cryptoExchanges = ['binance', 'okx', 'bitget', 'bybit', 'coinbaseexchange', 'kraken', 'kucoin', 'gate', 'deepcoin']
       if (cryptoExchanges.includes(exchangeId)) {
         return marketCategory === 'Crypto'
       }
@@ -2507,7 +2518,7 @@ export default {
         }
 
         // Validate crypto exchanges can only be used for Crypto
-        const cryptoExchanges = ['binance', 'okx', 'bitget', 'bybit', 'coinbaseexchange', 'kraken', 'kucoin', 'gate', 'bitfinex']
+        const cryptoExchanges = ['binance', 'okx', 'bitget', 'bybit', 'coinbaseexchange', 'kraken', 'kucoin', 'gate']
         if (cryptoExchanges.includes(exchangeId) && this.selectedMarketCategory !== 'Crypto') {
           this.$message.error(this.$t('trading-assistant.validation.cryptoExchangeOnlyForCrypto'))
           // Clear the selection
@@ -2973,8 +2984,8 @@ export default {
             const last = curveRes.data[curveRes.data.length - 1]
             closedEquity = last.equity
           } else {
-            const base = this.selectedStrategy.trading_config?.initial_capital || this.selectedStrategy.initial_capital
-            closedEquity = base || null
+            const base = this.strategyInitialCapital
+            closedEquity = base != null ? base : null
           }
         }
 
@@ -3541,7 +3552,6 @@ export default {
         okx: 'blue',
         coinbaseexchange: 'cyan',
         kraken: 'purple',
-        bitfinex: 'geekblue',
         huobi: 'orange',
         gate: 'green',
         mexc: 'lime',
@@ -3653,10 +3663,6 @@ export default {
           secret_key: '请输入Secret Key'
         },
         kraken: {
-          api_key: '请输入API Key',
-          secret_key: '请输入Secret Key'
-        },
-        bitfinex: {
           api_key: '请输入API Key',
           secret_key: '请输入Secret Key'
         },
@@ -5579,7 +5585,7 @@ export default {
           background: #fff;
 
           .ant-tabs {
-            flex: 1;
+            flex: 1 0 auto;
             display: flex;
             flex-direction: column;
 
@@ -5588,7 +5594,7 @@ export default {
             }
 
             .ant-tabs-content {
-              flex: 1;
+              flex: 1 0 auto;
             }
 
             .ant-tabs-tabpane {

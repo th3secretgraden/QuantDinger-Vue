@@ -35,6 +35,16 @@ const locale = {
 
   'menu.dashboard.indicatorIde': 'Indicator IDE',
 
+  'indicatorIde.direction': 'Hướng giao dịch',
+  'indicatorIde.tuningLaunchTitle': 'Tối ưu thông minh',
+  'indicatorIde.tuningLaunchDesc': 'Tự động tìm tham số chiến lược tối ưu để cải thiện lợi nhuận backtest. Chọn phương pháp bên dưới và nhấn Chạy.',
+  'indicatorIde.structuredTuneExplain': 'Lưới hoặc lấy mẫu ngẫu nhiên các tham số cắt lỗ, chốt lời và khối lượng vị thế được gắn @strategy trong mã. Kết quả xếp theo lợi nhuận. Phù hợp chiến lược có khoảng tham số rõ ràng.',
+  'indicatorIde.aiTuneExplain': 'AI phân tích kết quả backtest và tìm kiếm lặp tổ hợp tham số tốt nhất qua nhiều vòng. Không cần thiết lập khoảng thủ công — lý tưởng để khám phá nhanh.',
+  'indicatorIde.runTune': 'Chạy',
+  'indicatorIde.aiOptimizeHint': 'Để AI tìm tổ hợp tham số tốt hơn dựa trên kết quả backtest của bạn',
+  'indicatorIde.devGuide': 'Hướng dẫn phát triển',
+  'indicatorIde.devGuideTooltip': 'Đọc hướng dẫn lập trình chiến lược/chỉ báo',
+
   'menu.dashboard.strategyScripts': 'Python Scripts',
 
   'menu.dashboard.tradingBot': 'Trading Bot',

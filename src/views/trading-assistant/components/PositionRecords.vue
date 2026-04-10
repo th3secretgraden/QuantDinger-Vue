@@ -33,6 +33,10 @@
       <template slot="size" slot-scope="text, record">
         {{ parseFloat(record.size || text || 0).toFixed(4) }}
       </template>
+      <template slot="notional" slot-scope="text, record">
+        <span v-if="getNotional(record) > 0">${{ getNotional(record).toFixed(2) }}</span>
+        <span v-else>--</span>
+      </template>
       <template slot="unrealizedPnl" slot-scope="text, record">
         <span :class="{ 'profit': parseFloat(record.unrealized_pnl || text || 0) > 0, 'loss': parseFloat(record.unrealized_pnl || text || 0) < 0 }">
           ${{ parseFloat(record.unrealized_pnl || text || 0).toFixed(2) }}
@@ -102,6 +106,13 @@ export default {
           key: 'size',
           width: 120,
           scopedSlots: { customRender: 'size' }
+        },
+        {
+          title: this.$t('trading-assistant.table.notional') || 'Value (USDT)',
+          dataIndex: 'notional',
+          key: 'notional',
+          width: 130,
+          scopedSlots: { customRender: 'notional' }
         },
         {
           title: this.$t('trading-assistant.table.entryPrice'),
@@ -205,6 +216,14 @@ export default {
     hasValidPrice (price) {
       const value = parseFloat(price)
       return Number.isFinite(value) && value > 0
+    },
+    getNotional (record) {
+      const size = parseFloat(record.size || 0)
+      const cp = parseFloat(record.current_price || 0)
+      if (size > 0 && cp > 0) return size * cp
+      const ep = parseFloat(record.entry_price || 0)
+      if (size > 0 && ep > 0) return size * ep
+      return 0
     },
     startPolling () {
       this.stopPolling()
@@ -395,6 +414,18 @@ export default {
     ::v-deep .ant-table-tbody > tr > td strong {
       color: #d1d4dc !important;
     }
+
+    ::v-deep .ant-tag[color="green"] {
+      background: rgba(63, 185, 80, 0.18) !important;
+      color: #3fb950 !important;
+      border: 1px solid rgba(63, 185, 80, 0.35) !important;
+    }
+
+    ::v-deep .ant-tag[color="red"] {
+      background: rgba(248, 81, 73, 0.18) !important;
+      color: #f85149 !important;
+      border: 1px solid rgba(248, 81, 73, 0.35) !important;
+    }
   }
 
   ::v-deep .ant-table-tbody > tr:hover > td {
@@ -544,275 +575,89 @@ export default {
 </style>
 
 <style lang="less">
-// 暗黑主题适配 - 使用更高优先级的选择器覆盖 scoped 样式
-// 必须使用完整的 scoped 选择器路径来覆盖
-.theme-dark .position-records .ant-table-tbody > tr > td,
-.theme-dark .position-records[data-v] .ant-table-tbody > tr > td,
-body.dark .position-records .ant-table-tbody > tr > td,
-body.realdark .position-records .ant-table-tbody > tr > td {
-  color: #d1d4dc !important;
-  background: #1c1c1c !important;
-  border-bottom-color: #363c4e !important;
-}
-
-.theme-dark .position-records .ant-table-thead > tr > th,
-.theme-dark .position-records[data-v] .ant-table-thead > tr > th,
-body.dark .position-records .ant-table-thead > tr > th,
-body.realdark .position-records .ant-table-thead > tr > th {
-  background: #2a2e39 !important;
-  color: #d1d4dc !important;
-  border-bottom-color: #363c4e !important;
-  font-weight: 600 !important;
-}
-
-.theme-dark .position-records .ant-table,
-.theme-dark .position-records[data-v] .ant-table,
-body.dark .position-records .ant-table,
-body.realdark .position-records .ant-table {
-  background: #1c1c1c !important;
-  color: #d1d4dc !important;
-}
-
-.theme-dark .position-records .ant-table-tbody > tr > td *,
-.theme-dark .position-records[data-v] .ant-table-tbody > tr > td *,
-body.dark .position-records .ant-table-tbody > tr > td *,
-body.realdark .position-records .ant-table-tbody > tr > td * {
-  color: #d1d4dc !important;
-}
-
-.theme-dark .position-records .ant-table-tbody > tr:hover > td,
-.theme-dark .position-records[data-v] .ant-table-tbody > tr:hover > td,
-body.dark .position-records .ant-table-tbody > tr:hover > td,
-body.realdark .position-records .ant-table-tbody > tr:hover > td {
-  background: #2a2e39 !important;
-}
-
-// 确保表头文字可见
-.theme-dark .position-records .ant-table-thead > tr > th,
-.theme-dark .position-records[data-v] .ant-table-thead > tr > th,
-body.dark .position-records .ant-table-thead > tr > th,
-body.realdark .position-records .ant-table-thead > tr > th {
-  .ant-table-column-title {
+.theme-dark .position-records,
+body.dark .position-records,
+body.realdark .position-records {
+  .ant-table {
+    background: #1c1c1c !important;
     color: #d1d4dc !important;
   }
-}
 
-// 通用选择器作为后备
-.theme-dark .position-records[data-v] .ant-table-tbody > tr > td,
-.theme-dark [class*="position-records"][data-v] .ant-table-tbody > tr > td {
-  color: #d1d4dc !important;
-  background: #1c1c1c !important;
-  border-bottom-color: #363c4e !important;
-}
+  .ant-table-thead > tr > th {
+    background: #2a2e39 !important;
+    color: #d1d4dc !important;
+    border-bottom-color: #363c4e !important;
+    font-weight: 600 !important;
 
-.theme-dark .position-records[data-v] .ant-table-thead > tr > th,
-.theme-dark [class*="position-records"][data-v] .ant-table-thead > tr > th {
-  background: #2a2e39 !important;
-  color: #d1d4dc !important;
-  border-bottom-color: #363c4e !important;
-}
-</style>
-
-<style lang="less">
-// 暗黑主题适配 - 使用最高优先级的选择器覆盖 scoped 样式
-// 关键：必须使用与 scoped 样式完全相同的选择器结构，加上 theme-dark 前缀
-// 使用属性选择器的精确匹配来覆盖 scoped 样式
-
-// 方法1：精确匹配 data-v-6c1eb557
-.theme-dark .position-records[data-v-6c1eb557] .ant-table-tbody > tr > td,
-.theme-dark [data-v-6c1eb557].position-records .ant-table-tbody > tr > td,
-.theme-dark [data-v-6c1eb557] .position-records .ant-table-tbody > tr > td {
-  color: #d1d4dc !important;
-  background: #1c1c1c !important;
-  border-bottom-color: #363c4e !important;
-}
-
-// 方法2：使用属性选择器前缀匹配（更通用）
-.theme-dark [data-v-6c1eb557] .ant-table-tbody > tr > td {
-  color: #d1d4dc !important;
-  background: #1c1c1c !important;
-  border-bottom-color: #363c4e !important;
-}
-
-.theme-dark .position-records[data-v-6c1eb557] .ant-table-thead > tr > th,
-.theme-dark [data-v-6c1eb557].position-records .ant-table-thead > tr > th {
-  background: #2a2e39 !important;
-  color: #d1d4dc !important;
-  border-bottom-color: #363c4e !important;
-}
-
-.theme-dark .position-records[data-v-6c1eb557] .ant-table,
-.theme-dark [data-v-6c1eb557].position-records .ant-table {
-  background: #1c1c1c !important;
-  color: #d1d4dc !important;
-}
-
-.theme-dark .position-records[data-v-6c1eb557] .ant-table-tbody > tr:hover > td,
-.theme-dark [data-v-6c1eb557].position-records .ant-table-tbody > tr:hover > td {
-  background: #2a2e39 !important;
-}
-
-// body.dark 和 body.realdark 支持
-body.dark .position-records[data-v-6c1eb557] .ant-table-tbody > tr > td,
-body.dark [data-v-6c1eb557].position-records .ant-table-tbody > tr > td,
-body.dark [data-v-6c1eb557] .position-records .ant-table-tbody > tr > td,
-body.realdark .position-records[data-v-6c1eb557] .ant-table-tbody > tr > td,
-body.realdark [data-v-6c1eb557].position-records .ant-table-tbody > tr > td,
-body.realdark [data-v-6c1eb557] .position-records .ant-table-tbody > tr > td {
-  color: #d1d4dc !important;
-  background: #1c1c1c !important;
-  border-bottom-color: #363c4e !important;
-}
-
-// 方法2：使用属性选择器前缀匹配（更通用）
-body.dark [data-v-6c1eb557] .ant-table-tbody > tr > td,
-body.realdark [data-v-6c1eb557] .ant-table-tbody > tr > td {
-  color: #d1d4dc !important;
-  background: #1c1c1c !important;
-  border-bottom-color: #363c4e !important;
-}
-
-body.dark .position-records[data-v-6c1eb557] .ant-table-thead > tr > th,
-body.dark [data-v-6c1eb557].position-records .ant-table-thead > tr > th,
-body.dark [data-v-6c1eb557] .position-records .ant-table-thead > tr > th,
-body.realdark .position-records[data-v-6c1eb557] .ant-table-thead > tr > th,
-body.realdark [data-v-6c1eb557].position-records .ant-table-thead > tr > th,
-body.realdark [data-v-6c1eb557] .position-records .ant-table-thead > tr > th {
-  background: #2a2e39 !important;
-  color: #d1d4dc !important;
-  border-bottom-color: #363c4e !important;
-}
-
-// 方法2：使用属性选择器前缀匹配（更通用）
-body.dark [data-v-6c1eb557] .ant-table-thead > tr > th,
-body.realdark [data-v-6c1eb557] .ant-table-thead > tr > th {
-  background: #2a2e39 !important;
-  color: #d1d4dc !important;
-  border-bottom-color: #363c4e !important;
-}
-
-// 通用后备选择器（如果 data-v 值变化）
-.theme-dark .position-records[data-v] .ant-table-tbody > tr > td,
-body.dark .position-records[data-v] .ant-table-tbody > tr > td,
-body.realdark .position-records[data-v] .ant-table-tbody > tr > td {
-  color: #d1d4dc !important;
-  background: #1c1c1c !important;
-  border-bottom-color: #363c4e !important;
-}
-
-.theme-dark .position-records[data-v] .ant-table-thead > tr > th,
-body.dark .position-records[data-v] .ant-table-thead > tr > th,
-body.realdark .position-records[data-v] .ant-table-thead > tr > th {
-  background: #2a2e39 !important;
-  color: #d1d4dc !important;
-  border-bottom-color: #363c4e !important;
-}
-
-// 其他样式
-.theme-dark .position-records[data-v-6c1eb557] .ant-empty .ant-empty-description,
-body.dark .position-records[data-v-6c1eb557] .ant-empty .ant-empty-description,
-body.realdark .position-records[data-v-6c1eb557] .ant-empty .ant-empty-description {
-  color: #868993 !important;
-}
-
-.theme-dark .position-records[data-v-6c1eb557] .profit,
-body.dark .position-records[data-v-6c1eb557] .profit,
-body.realdark .position-records[data-v-6c1eb557] .profit {
-  color: #52c41a !important;
-}
-
-.theme-dark .position-records[data-v-6c1eb557] .loss,
-body.dark .position-records[data-v-6c1eb557] .loss,
-body.realdark .position-records[data-v-6c1eb557] .loss {
-  color: #ff4d4f !important;
-}
-</style>
-
-<style lang="less">
-// 最终覆盖方案：使用更长的选择器链确保最高优先级
-// 直接匹配 scoped 样式生成的完整选择器路径
-.theme-dark .trading-assistant .position-records[data-v-6c1eb557] .ant-table-tbody > tr > td,
-.theme-dark .trading-assistant [data-v-6c1eb557].position-records .ant-table-tbody > tr > td,
-body.dark .trading-assistant .position-records[data-v-6c1eb557] .ant-table-tbody > tr > td,
-body.dark .trading-assistant [data-v-6c1eb557].position-records .ant-table-tbody > tr > td,
-body.realdark .trading-assistant .position-records[data-v-6c1eb557] .ant-table-tbody > tr > td,
-body.realdark .trading-assistant [data-v-6c1eb557].position-records .ant-table-tbody > tr > td {
-  color: #d1d4dc !important;
-  background: #1c1c1c !important;
-  border-bottom-color: #363c4e !important;
-}
-
-.theme-dark .trading-assistant .position-records[data-v-6c1eb557] .ant-table-thead > tr > th,
-.theme-dark .trading-assistant [data-v-6c1eb557].position-records .ant-table-thead > tr > th,
-body.dark .trading-assistant .position-records[data-v-6c1eb557] .ant-table-thead > tr > th,
-body.dark .trading-assistant [data-v-6c1eb557].position-records .ant-table-thead > tr > th,
-body.realdark .trading-assistant .position-records[data-v-6c1eb557] .ant-table-thead > tr > th,
-body.realdark .trading-assistant [data-v-6c1eb557].position-records .ant-table-thead > tr > th {
-  background: #2a2e39 !important;
-  color: #d1d4dc !important;
-  border-bottom-color: #363c4e !important;
-}
-
-// 暗黑主题滚动条样式
-.theme-dark .position-records[data-v-6c1eb557] .ant-table-body,
-.theme-dark .position-records[data-v-6c1eb557] .ant-table-container,
-.theme-dark .position-records[data-v-6c1eb557] .ant-table-content,
-.theme-dark .position-records[data-v-6c1eb557] .ant-table-wrapper,
-body.dark .position-records[data-v-6c1eb557] .ant-table-body,
-body.dark .position-records[data-v-6c1eb557] .ant-table-container,
-body.dark .position-records[data-v-6c1eb557] .ant-table-content,
-body.dark .position-records[data-v-6c1eb557] .ant-table-wrapper,
-body.realdark .position-records[data-v-6c1eb557] .ant-table-body,
-body.realdark .position-records[data-v-6c1eb557] .ant-table-container,
-body.realdark .position-records[data-v-6c1eb557] .ant-table-content,
-body.realdark .position-records[data-v-6c1eb557] .ant-table-wrapper {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(209, 212, 220, 0.3) transparent;
-  &::-webkit-scrollbar {
-    height: 6px;
-    width: 6px;
-  }
-  &::-webkit-scrollbar-track {
-    background: transparent;
-    border-radius: 3px;
-  }
-  &::-webkit-scrollbar-thumb {
-    background: rgba(209, 212, 220, 0.3);
-    border-radius: 3px;
-    &:hover {
-      background: rgba(209, 212, 220, 0.5);
+    .ant-table-column-title {
+      color: #d1d4dc !important;
     }
   }
-}
 
-// 通用后备选择器
-.theme-dark .position-records[data-v] .ant-table-body,
-.theme-dark .position-records[data-v] .ant-table-container,
-.theme-dark .position-records[data-v] .ant-table-content,
-.theme-dark .position-records[data-v] .ant-table-wrapper,
-body.dark .position-records[data-v] .ant-table-body,
-body.dark .position-records[data-v] .ant-table-container,
-body.dark .position-records[data-v] .ant-table-content,
-body.dark .position-records[data-v] .ant-table-wrapper,
-body.realdark .position-records[data-v] .ant-table-body,
-body.realdark .position-records[data-v] .ant-table-container,
-body.realdark .position-records[data-v] .ant-table-content,
-body.realdark .position-records[data-v] .ant-table-wrapper {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(209, 212, 220, 0.3) transparent;
-  &::-webkit-scrollbar {
-    height: 6px;
-    width: 6px;
+  .ant-table-tbody > tr > td {
+    color: #d1d4dc !important;
+    background: #1c1c1c !important;
+    border-bottom-color: #363c4e !important;
+
+    strong {
+      color: #d1d4dc !important;
+    }
+
+    *:not(.ant-tag):not(.profit):not(.loss) {
+      color: #d1d4dc !important;
+    }
   }
-  &::-webkit-scrollbar-track {
-    background: transparent;
-    border-radius: 3px;
+
+  .ant-table-tbody > tr:hover > td {
+    background: #2a2e39 !important;
   }
-  &::-webkit-scrollbar-thumb {
-    background: rgba(209, 212, 220, 0.3);
-    border-radius: 3px;
-    &:hover {
-      background: rgba(209, 212, 220, 0.5);
+
+  .ant-tag[color="green"] {
+    background: rgba(63, 185, 80, 0.18) !important;
+    color: #3fb950 !important;
+    border: 1px solid rgba(63, 185, 80, 0.35) !important;
+  }
+
+  .ant-tag[color="red"] {
+    background: rgba(248, 81, 73, 0.18) !important;
+    color: #f85149 !important;
+    border: 1px solid rgba(248, 81, 73, 0.35) !important;
+  }
+
+  .profit {
+    color: #3fb950 !important;
+    background: linear-gradient(135deg, rgba(63, 185, 80, 0.15) 0%, rgba(63, 185, 80, 0.06) 100%) !important;
+  }
+
+  .loss {
+    color: #f85149 !important;
+    background: linear-gradient(135deg, rgba(248, 81, 73, 0.15) 0%, rgba(248, 81, 73, 0.06) 100%) !important;
+  }
+
+  .ant-empty .ant-empty-description {
+    color: #868993 !important;
+  }
+
+  .ant-table-body,
+  .ant-table-container,
+  .ant-table-content,
+  .ant-table-wrapper {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(209, 212, 220, 0.3) transparent;
+    &::-webkit-scrollbar {
+      height: 6px;
+      width: 6px;
+    }
+    &::-webkit-scrollbar-track {
+      background: transparent;
+      border-radius: 3px;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: rgba(209, 212, 220, 0.3);
+      border-radius: 3px;
+      &:hover {
+        background: rgba(209, 212, 220, 0.5);
+      }
     }
   }
 }

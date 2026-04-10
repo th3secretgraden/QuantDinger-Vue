@@ -66,3 +66,27 @@ export function formatUserDateTime (input, opts = {}) {
     }
   }
 }
+
+/**
+ * Format instant in the browser's local timezone (ignores profile timezone override).
+ * Use for audit-style timestamps (e.g. trade history) so wall clock matches the user's machine.
+ */
+export function formatBrowserLocalDateTime (input, opts = {}) {
+  const d = parseToDate(input)
+  if (!d) return opts.fallback != null ? opts.fallback : '-'
+  const locale = opts.locale || (typeof navigator !== 'undefined' && navigator.language) || 'zh-CN'
+  const intlOpts = {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  }
+  try {
+    return d.toLocaleString(locale, intlOpts)
+  } catch (e) {
+    return d.toLocaleString()
+  }
+}

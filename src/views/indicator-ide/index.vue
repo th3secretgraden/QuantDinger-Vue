@@ -159,6 +159,13 @@
             <a-icon :type="codePanelExpanded ? 'up' : 'down'" style="margin-left: auto;" />
           </div>
           <div v-show="codePanelExpanded" class="code-panel-body">
+            <div class="ide-guide-bar">
+              <a-icon type="book" />
+              <span>{{ $t('indicatorIde.devGuideTooltip') }}</span>
+              <a href="https://github.com/brokermr810/QuantDinger/blob/main/docs/STRATEGY_DEV_GUIDE.md" target="_blank" rel="noopener noreferrer" class="ide-guide-link" @click.stop>
+                {{ $t('indicatorIde.devGuide') }} <a-icon type="arrow-right" />
+              </a>
+            </div>
             <a-alert
               v-if="showPurchasedMarketHint"
               type="info"
@@ -240,7 +247,6 @@
                   <a-icon v-if="!aiGenerating" type="robot" />
                   {{ aiGenerating ? $t('indicatorIde.generating') : $t('indicatorIde.generateCode') }}
                 </a-button>
-                <div class="ai-helper-tip" style="margin-top: 8px;">{{ $t('indicatorIde.tuningMovedToTabHint') }}</div>
                 <div class="ai-helper-links">
                   <a @click.prevent="goToIndicatorMarket">{{ $t('indicatorIde.goIndicatorMarket') }}</a>
                 </div>
@@ -386,10 +392,16 @@
 
                 <div class="param-section param-section--full">
                   <div class="param-label">{{ $t('indicatorIde.direction') }}</div>
-                  <a-radio-group v-model="tradeDirection" size="small" button-style="solid">
-                    <a-radio-button value="long">{{ $t('indicatorIde.long') }}</a-radio-button>
-                    <a-radio-button value="short">{{ $t('indicatorIde.short') }}</a-radio-button>
-                    <a-radio-button value="both">{{ $t('indicatorIde.both') }}</a-radio-button>
+                  <a-radio-group v-model="tradeDirection" class="direction-radio-group">
+                    <a-radio-button value="long">
+                      <a-icon type="arrow-up" /> {{ $t('indicatorIde.long') }}
+                    </a-radio-button>
+                    <a-radio-button value="short">
+                      <a-icon type="arrow-down" /> {{ $t('indicatorIde.short') }}
+                    </a-radio-button>
+                    <a-radio-button value="both">
+                      <a-icon type="swap" /> {{ $t('indicatorIde.both') }}
+                    </a-radio-button>
                   </a-radio-group>
                   <div style="margin-top: 8px;">
                     <a-tooltip :title="$t('indicatorIde.mtfHint')">
@@ -424,18 +436,6 @@
                     <div class="metric-label">{{ m.label }}</div>
                     <div class="metric-value">{{ m.value }}</div>
                   </div>
-                </div>
-
-                <!-- AI Optimize button -->
-                <div v-if="hasResult && !running" class="ai-optimize-bar">
-                  <a-button
-                    size="small"
-                    :loading="aiOptimizing"
-                    @click="handleAIOptimize"
-                  >
-                    <a-icon v-if="!aiOptimizing" type="experiment" />
-                    {{ $t('indicatorIde.aiOptimize') }}
-                  </a-button>
                 </div>
 
                 <!-- Equity curve -->
@@ -483,39 +483,86 @@
                     </template>
                   </a-table>
                 </div>
+
+                <!-- AI Optimize CTA -->
+                <div v-if="hasResult && !running" class="ai-optimize-card">
+                  <div class="ai-optimize-card-inner">
+                    <div class="ai-optimize-card-icon">
+                      <a-icon type="experiment" />
+                    </div>
+                    <div class="ai-optimize-card-body">
+                      <div class="ai-optimize-card-title">{{ $t('indicatorIde.aiOptimize') }}</div>
+                      <div class="ai-optimize-card-desc">{{ $t('indicatorIde.aiOptimizeHint') }}</div>
+                    </div>
+                    <a-button
+                      type="primary"
+                      size="small"
+                      :loading="aiOptimizing"
+                      @click="handleAIOptimize"
+                    >
+                      <a-icon v-if="!aiOptimizing" type="thunderbolt" />
+                      {{ $t('indicatorIde.aiOptimize') }}
+                    </a-button>
+                  </div>
+                </div>
               </div>
             </a-tab-pane>
 
             <a-tab-pane key="aisystem" :tab="$t('indicatorIde.aiExperimentTab')">
-              <!-- 调参入口：网格/随机 + 结构化扫参 + AI 调参（与「AI 生成代码」分离） -->
               <div v-if="!experimentRunning" class="ide-tuning-launch">
-                <div class="ide-tuning-launch-title">{{ $t('indicatorIde.tuningLaunchTitle') }}</div>
-                <div class="ide-tuning-launch-row">
-                  <a-radio-group v-model="structuredTuneMethod" size="small">
-                    <a-radio-button value="grid">{{ $t('indicatorIde.structuredTuneGrid') }}</a-radio-button>
-                    <a-radio-button value="random">{{ $t('indicatorIde.structuredTuneRandom') }}</a-radio-button>
-                  </a-radio-group>
-                  <a-button
-                    size="small"
-                    :loading="experimentRunning && experimentRunKind === 'structured'"
-                    :disabled="experimentRunning"
-                    @click="handleRunStructuredTune"
-                  >
-                    <a-icon type="deployment-unit" />
-                    {{ $t('indicatorIde.runStructuredTune') }}
-                  </a-button>
-                  <a-button
-                    size="small"
-                    type="primary"
-                    :loading="experimentRunning && experimentRunKind === 'llm'"
-                    :disabled="experimentRunning"
-                    @click="handleRunAIExperiment"
-                  >
-                    <a-icon type="experiment" />
-                    {{ $t('indicatorIde.runAiExperiment') }}
-                  </a-button>
+                <div class="ide-tuning-launch-header">
+                  <div class="ide-tuning-launch-icon"><a-icon type="experiment" /></div>
+                  <div>
+                    <div class="ide-tuning-launch-title">{{ $t('indicatorIde.tuningLaunchTitle') }}</div>
+                    <div class="ide-tuning-launch-subtitle">{{ $t('indicatorIde.tuningLaunchDesc') }}</div>
+                  </div>
                 </div>
-                <div class="ide-tuning-launch-hint">{{ $t('indicatorIde.structuredTuneHint') }}</div>
+
+                <div class="ide-tuning-method-cards">
+                  <div class="ide-tuning-method-card">
+                    <div class="ide-tuning-method-card-head">
+                      <a-icon type="deployment-unit" class="ide-tuning-method-icon ide-tuning-method-icon--grid" />
+                      <span class="ide-tuning-method-name">{{ $t('indicatorIde.runStructuredTune') }}</span>
+                    </div>
+                    <div class="ide-tuning-method-desc">{{ $t('indicatorIde.structuredTuneExplain') }}</div>
+                    <div class="ide-tuning-method-actions">
+                      <a-radio-group v-model="structuredTuneMethod" size="small">
+                        <a-radio-button value="grid">{{ $t('indicatorIde.structuredTuneGrid') }}</a-radio-button>
+                        <a-radio-button value="random">{{ $t('indicatorIde.structuredTuneRandom') }}</a-radio-button>
+                      </a-radio-group>
+                      <a-button
+                        size="small"
+                        :loading="experimentRunning && experimentRunKind === 'structured'"
+                        :disabled="experimentRunning"
+                        @click="handleRunStructuredTune"
+                      >
+                        <a-icon type="play-circle" />
+                        {{ $t('indicatorIde.runTune') }}
+                      </a-button>
+                    </div>
+                  </div>
+
+                  <div class="ide-tuning-method-card ide-tuning-method-card--ai">
+                    <div class="ide-tuning-method-card-head">
+                      <a-icon type="robot" class="ide-tuning-method-icon ide-tuning-method-icon--ai" />
+                      <span class="ide-tuning-method-name">{{ $t('indicatorIde.runAiExperiment') }}</span>
+                      <a-tag color="blue" size="small" style="margin-left: auto;">AI</a-tag>
+                    </div>
+                    <div class="ide-tuning-method-desc">{{ $t('indicatorIde.aiTuneExplain') }}</div>
+                    <div class="ide-tuning-method-actions">
+                      <a-button
+                        type="primary"
+                        size="small"
+                        :loading="experimentRunning && experimentRunKind === 'llm'"
+                        :disabled="experimentRunning"
+                        @click="handleRunAIExperiment"
+                      >
+                        <a-icon type="thunderbolt" />
+                        {{ $t('indicatorIde.runTune') }}
+                      </a-button>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <!-- Running state with real-time progress -->
@@ -3634,6 +3681,39 @@ export default {
     &[disabled] { opacity: 0.35; }
   }
 }
+.ide-guide-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  font-size: 11px;
+  color: #8c8c8c;
+  background: #f8f9fb;
+  border-bottom: 1px solid #f0f0f0;
+  flex-shrink: 0;
+  > .anticon { color: #bfbfbf; font-size: 12px; }
+}
+.ide-guide-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: auto;
+  padding: 1px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #1890ff;
+  background: rgba(24, 144, 255, 0.06);
+  border: 1px solid rgba(24, 144, 255, 0.2);
+  border-radius: 10px;
+  text-decoration: none;
+  transition: all 0.2s;
+  white-space: nowrap;
+  &:hover {
+    color: #fff;
+    background: #1890ff;
+    border-color: #1890ff;
+  }
+}
 
 // ===== Code Editor Scrollbar =====
 .code-editor-area {
@@ -3739,6 +3819,48 @@ export default {
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
 }
 .param-section--full { grid-column: 1 / -1; }
+
+.direction-radio-group {
+  display: flex !important;
+  width: 100%;
+  /deep/ .ant-radio-button-wrapper {
+    flex: 1;
+    text-align: center;
+    height: 34px;
+    line-height: 32px;
+    font-size: 12px;
+    font-weight: 500;
+    border-radius: 8px !important;
+    border: 1px solid #e8e8e8 !important;
+    background: #fafafa;
+    color: #8c8c8c;
+    transition: all 0.2s ease;
+    &:not(:first-child) { margin-left: 8px; }
+    &::before { display: none !important; }
+    &:hover {
+      color: #595959;
+      border-color: #d0d0d0 !important;
+    }
+    .anticon { margin-right: 3px; }
+  }
+  /deep/ .ant-radio-button-wrapper-checked {
+    color: #fff !important;
+    border-color: transparent !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12) !important;
+    &[value="long"],
+    &:nth-child(1) {
+      background: linear-gradient(135deg, #52c41a, #73d13d) !important;
+    }
+    &[value="short"],
+    &:nth-child(2) {
+      background: linear-gradient(135deg, #f5222d, #ff4d4f) !important;
+    }
+    &[value="both"],
+    &:nth-child(3) {
+      background: linear-gradient(135deg, #1890ff, #40a9ff) !important;
+    }
+  }
+}
 .param-strategy-hint {
   margin-top: 10px;
   font-size: 11px;
@@ -4010,7 +4132,47 @@ export default {
     &.negative .metric-value { color: #f5222d; }
   }
 }
-.ai-optimize-bar { margin-bottom: 12px; }
+.ai-optimize-card {
+  margin-top: 16px;
+  margin-bottom: 8px;
+}
+.ai-optimize-card-inner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(24, 144, 255, 0.06) 0%, rgba(114, 46, 209, 0.04) 100%);
+  border: 1px solid rgba(24, 144, 255, 0.15);
+}
+.ai-optimize-card-icon {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #1890ff, #722ed1);
+  color: #fff;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.ai-optimize-card-body {
+  flex: 1;
+  min-width: 0;
+}
+.ai-optimize-card-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+  line-height: 1.3;
+}
+.ai-optimize-card-desc {
+  font-size: 11px;
+  color: #8c8c8c;
+  margin-top: 2px;
+  line-height: 1.4;
+}
 .eq-section { margin-bottom: 14px; }
 .eq-title, .trades-title {
   font-size: 13px; font-weight: 600; color: #333; margin-bottom: 8px; display: flex; align-items: center;
@@ -4019,29 +4181,85 @@ export default {
 .equity-chart { width: 100%; height: 200px; border-radius: 8px; }
 
 .ide-tuning-launch {
+  padding: 14px;
+}
+.ide-tuning-launch-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
   margin-bottom: 14px;
-  padding: 12px 14px;
+}
+.ide-tuning-launch-icon {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 10px;
-  border: 1px solid #e8e8e8;
-  background: #fafbfc;
+  background: linear-gradient(135deg, #1890ff, #722ed1);
+  color: #fff;
+  font-size: 16px;
+  flex-shrink: 0;
 }
 .ide-tuning-launch-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e293b;
+}
+.ide-tuning-launch-subtitle {
   font-size: 12px;
+  color: #8c8c8c;
+  margin-top: 3px;
+  line-height: 1.5;
+}
+.ide-tuning-method-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ide-tuning-method-card {
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  &:hover {
+    border-color: rgba(24, 144, 255, 0.2);
+    box-shadow: 0 2px 8px rgba(24, 144, 255, 0.08);
+  }
+}
+.ide-tuning-method-card--ai {
+  border-color: rgba(24, 144, 255, 0.15);
+  background: linear-gradient(165deg, #fff 0%, rgba(24, 144, 255, 0.03) 100%);
+}
+.ide-tuning-method-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.ide-tuning-method-icon {
+  font-size: 15px;
+  &.ide-tuning-method-icon--grid { color: #722ed1; }
+  &.ide-tuning-method-icon--ai { color: #1890ff; }
+}
+.ide-tuning-method-name {
+  font-size: 13px;
   font-weight: 600;
-  color: #595959;
+  color: #333;
+}
+.ide-tuning-method-desc {
+  font-size: 11px;
+  color: #8c8c8c;
+  line-height: 1.55;
   margin-bottom: 10px;
 }
-.ide-tuning-launch-row {
+.ide-tuning-method-actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
-}
-.ide-tuning-launch-hint {
-  margin-top: 8px;
-  font-size: 11px;
-  color: #8c8c8c;
-  line-height: 1.45;
+  gap: 8px;
 }
 
 .experiment-panel {
@@ -4556,12 +4774,26 @@ export default {
       border-top-color: #303030;
     }
   }
-  .ide-tuning-launch {
-    border-color: #363636;
+  .ide-tuning-launch-title { color: rgba(255, 255, 255, 0.88); }
+  .ide-tuning-launch-subtitle { color: rgba(255, 255, 255, 0.45); }
+  .ide-tuning-method-card {
     background: #1f1f1f;
+    border-color: #363636;
+    box-shadow: none;
+    &:hover { border-color: rgba(88, 166, 255, 0.3); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); }
   }
-  .ide-tuning-launch-title { color: rgba(255, 255, 255, 0.65); }
-  .ide-tuning-launch-hint { color: rgba(255, 255, 255, 0.45); }
+  .ide-tuning-method-card--ai {
+    background: linear-gradient(165deg, #1f1f1f 0%, rgba(23, 125, 220, 0.06) 100%);
+    border-color: rgba(88, 166, 255, 0.2);
+  }
+  .ide-tuning-method-name { color: rgba(255, 255, 255, 0.85); }
+  .ide-tuning-method-desc { color: rgba(255, 255, 255, 0.45); }
+  .ai-optimize-card-inner {
+    background: linear-gradient(135deg, rgba(23, 125, 220, 0.1) 0%, rgba(114, 46, 209, 0.06) 100%);
+    border-color: rgba(88, 166, 255, 0.2);
+  }
+  .ai-optimize-card-title { color: rgba(255, 255, 255, 0.88); }
+  .ai-optimize-card-desc { color: rgba(255, 255, 255, 0.45); }
   .panel-title { color: rgba(255,255,255,0.85); border-bottom-color: #303030; &:hover { background: rgba(255,255,255,0.04); } }
   .ai-gen-panel { border-top-color: #303030; }
   .ai-gen-header { color: rgba(255,255,255,0.85); &:hover { background: rgba(255,255,255,0.04); } }
@@ -4615,6 +4847,31 @@ export default {
     &:hover { color: rgba(255, 255, 255, 0.88); }
   }
   .param-strategy-hint { color: rgba(255, 255, 255, 0.45); }
+  .direction-radio-group /deep/ .ant-radio-button-wrapper {
+    background: #262626;
+    border-color: #434343 !important;
+    color: rgba(255, 255, 255, 0.55);
+    &:hover {
+      color: rgba(255, 255, 255, 0.85);
+      border-color: #555 !important;
+    }
+  }
+  .ide-guide-bar {
+    background: #1a1a1a;
+    border-bottom-color: #303030;
+    color: rgba(255, 255, 255, 0.45);
+    > .anticon { color: rgba(255, 255, 255, 0.3); }
+  }
+  .ide-guide-link {
+    color: #58a6ff;
+    background: rgba(88, 166, 255, 0.1);
+    border-color: rgba(88, 166, 255, 0.25);
+    &:hover {
+      color: #fff;
+      background: #177ddc;
+      border-color: #177ddc;
+    }
+  }
   .ai-helper-tip, .publish-form .publish-hint { color: rgba(255,255,255,0.45); }
   .code-quality-panel { border-top-color: #303030; }
   .code-quality-title { color: rgba(255,255,255,0.78); }

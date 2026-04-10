@@ -2569,3 +2569,79 @@ export default {
   }
 }
 </style>
+
+<style lang="less">
+.dashboard-pro.theme-dark {
+  .profit-calendar {
+    .calendar-weekdays .weekday {
+      color: #888 !important;
+    }
+
+    .calendar-grid .calendar-cell {
+      background: rgba(255, 255, 255, 0.03) !important;
+      border-color: transparent !important;
+
+      &.empty {
+        background: transparent !important;
+      }
+
+      &.no-data {
+        background: rgba(255, 255, 255, 0.02) !important;
+      }
+
+      &.profit {
+        background: linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(34, 197, 94, 0.25) 100%) !important;
+        border-color: rgba(34, 197, 94, 0.3) !important;
+      }
+
+      &.loss {
+        background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(239, 68, 68, 0.25) 100%) !important;
+        border-color: rgba(239, 68, 68, 0.3) !important;
+      }
+
+      &.zero {
+        background: rgba(255, 255, 255, 0.03) !important;
+      }
+
+      .day-number {
+        color: #f1f5f9 !important;
+      }
+
+      .day-profit {
+        &.positive { color: #34d399 !important; }
+        &.negative { color: #f87171 !important; }
+      }
+    }
+
+    .month-summary {
+      background: rgba(255, 255, 255, 0.04) !important;
+
+      .summary-label { color: #888 !important; }
+      .summary-value { color: #f1f5f9 !important; }
+      .summary-value.positive { color: #34d399 !important; }
+      .summary-value.negative { color: #f87171 !important; }
+    }
+  }
+
+  .calendar-nav {
+    .current-month { color: #f1f5f9 !important; }
+  }
+
+  .strategy-ranking .ranking-card {
+    .rank-info .rank-name {
+      color: #f1f5f9 !important;
+    }
+
+    .rank-info .rank-stats .stat {
+      label { color: #888 !important; }
+      span { color: #f1f5f9 !important; }
+      span.positive { color: #34d399 !important; }
+      span.negative { color: #f87171 !important; }
+    }
+
+    .rank-pnl-bar {
+      background: rgba(255, 255, 255, 0.06) !important;
+    }
+  }
+}
+</style>
