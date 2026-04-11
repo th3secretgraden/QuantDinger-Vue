@@ -266,18 +266,33 @@ Please also review the main repository contribution guidance:
 
 This repository is released under the **QuantDinger Frontend Source-Available License v1.0**. See [`LICENSE`](./LICENSE) for the full license text.
 
-| User Type | Cost | Permission Scope |
-|-----------|------|------------------|
-| Individuals | Free | Learning, research, non-commercial use, modification, and redistribution within license terms |
-| Schools / universities / non-profits / public research institutions | Free | Mission-aligned use under the license terms |
-| Commercial entities | License required | Contact QuantDinger for commercial authorization |
+Summary of the license position:
 
-Branding, trademarks, and watermark removal are not permitted without written approval.
+- Non-Commercial Use is permitted free of charge.
+- Qualified Non-Profit Entity use is permitted free of charge within the scope defined by the license.
+- Commercial Use requires a separate commercial license from QuantDinger.
+- Branding, trademarks, attribution, and watermark notices may not be removed, altered, or misrepresented without prior written permission.
+
+| Use Category | Cost | Scope |
+|--------------|------|-------|
+| Non-Commercial Use | Free | Personal learning, study, research, teaching, evaluation, experimentation, and similar non-commercial purposes |
+| Qualified Non-Profit Entity Use | Free | Mission-aligned use by eligible non-profits, accredited educational institutions, and government-funded public research institutions |
+| Commercial Use | License required | Any use involving commercial advantage, monetization, paid service delivery, or commercial product/service integration |
 
 For commercial licensing:
 
-- [quantdinger.com](https://quantdinger.com)
-- [brokermr810@gmail.com](mailto:brokermr810@gmail.com)
+- Website: [quantdinger.com](https://quantdinger.com)
+- Telegram: [t.me/worldinbroker](https://t.me/worldinbroker)
+- Email: [brokermr810@gmail.com](mailto:brokermr810@gmail.com)
+
+## Legal Notice and Compliance
+
+- This frontend, and any related QuantDinger software or derivative work, may be used only for lawful purposes.
+- No individual or organization may use the software for any unlawful, fraudulent, abusive, deceptive, market-manipulative, sanctions-violating, money-laundering, or otherwise prohibited activity.
+- Any commercial deployment, operation, redistribution, resale, or service offering based on QuantDinger must comply with the laws, regulations, licensing requirements, sanctions rules, tax rules, data-protection rules, and market or platform rules applicable in the country or region where it is used.
+- Users are solely responsible for determining whether their use is lawful in their jurisdiction and for obtaining any approvals, registrations, disclosures, or professional advice required by applicable law.
+- QuantDinger, its copyright holders, contributors, licensors, maintainers, and related open-source participants do not provide legal, tax, investment, compliance, or regulatory advice.
+- To the maximum extent permitted by applicable law, all such parties disclaim responsibility and liability for any unlawful use, regulatory breach, trading loss, service interruption, enforcement action, or other consequence arising from the use or misuse of the software.
 
 ## Acknowledgements
 
