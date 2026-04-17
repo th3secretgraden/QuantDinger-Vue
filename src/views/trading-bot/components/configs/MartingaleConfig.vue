@@ -38,6 +38,7 @@
         style="width: 100%"
         @change="emit"
       />
+      <div class="field-hint">{{ maxLayersHint }}</div>
     </a-form-model-item>
     <a-form-model-item :label="$t('trading-bot.martingale.priceDropPct')" prop="priceDropPct">
       <a-input-number
@@ -62,6 +63,7 @@
         :parser="v => v.replace('%', '')"
         @change="emit"
       />
+      <div class="field-hint">{{ takeProfitHint }}</div>
     </a-form-model-item>
     <a-form-model-item :label="$t('trading-bot.martingale.direction')">
       <a-radio-group v-model="form.direction" @change="emit">
@@ -101,7 +103,7 @@ export default {
         multiplier: this.value.multiplier || 2,
         maxLayers: this.value.maxLayers || 5,
         priceDropPct: this.value.priceDropPct || 3,
-        takeProfitPct: this.value.takeProfitPct || 5,
+        takeProfitPct: this.value.takeProfitPct || 2,
         direction: this.value.direction || 'long'
       },
       capitalLinked: !this.value.initialAmount,
@@ -137,8 +139,16 @@ export default {
     }
   },
   computed: {
+    isZhLocale () {
+      return String(this.$i18n?.locale || '').toLowerCase().startsWith('zh')
+    },
     isSpotMarket () {
       return this.marketType === 'spot'
+    },
+    maxLayersHint () {
+      return this.isZhLocale
+        ? '控制最多允许补仓的层数，不是仓位金额上限。'
+        : 'Controls how many add-on entries are allowed, not the max position size.'
     },
     maxInvestment () {
       let total = 0
@@ -152,6 +162,11 @@ export default {
     lastLayerAmount () {
       const amt = this.form.initialAmount * Math.pow(this.form.multiplier, this.form.maxLayers - 1)
       return amt.toLocaleString('en-US', { minimumFractionDigits: 2 })
+    },
+    takeProfitHint () {
+      return this.isZhLocale
+        ? '当持仓均价盈利达到此比例时，脚本自动平仓并重置马丁状态。'
+        : 'When average entry profit reaches this %, the script closes the position and resets martingale state.'
     },
     directionHint () {
       if (this.isSpotMarket) return 'Spot only supports long martingale bots.'
@@ -190,7 +205,8 @@ export default {
 
 <style lang="less" scoped>
 .capital-hint,
-.direction-hint {
+.direction-hint,
+.field-hint {
   margin-top: 6px;
   font-size: 12px;
   color: #8c8c8c;

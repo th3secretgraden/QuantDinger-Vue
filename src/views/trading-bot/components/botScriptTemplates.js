@@ -34,6 +34,7 @@ AMT       = ${params.amountPerGrid}
 MODE      = "${params.gridMode || 'arithmetic'}"
 DIRECTION = "${params.gridDirection || 'neutral'}"
 REF_PRICE = ${params.referencePrice || 0}
+BUDGET    = ${params._initialCapital || 0}
 
 def _build_levels():
     if MODE == "geometric" and LOWER > 0:
@@ -57,6 +58,7 @@ def on_init(ctx):
     ctx.param("sp", sp)
     ctx.param("prev_price", anchor)
     ctx.param("anchor_price", anchor)
+    ctx.param("total_spent", 0.0)
     ctx.log("Grid anchor @ %.2f | buy_pending=%d sell_pending=%d [%.2f ~ %.2f]" % (anchor, len(bp), len(sp), LOWER, UPPER))
 
 def on_bar(ctx, bar):
@@ -66,6 +68,7 @@ def on_bar(ctx, bar):
 
     prev_price = ctx.param("prev_price", -1.0)
     anchor = ctx.param("anchor_price", REF_PRICE if REF_PRICE > 0 else (LOWER + UPPER) / 2.0)
+    total_spent = ctx.param("total_spent", 0.0)
 
     if prev_price < 0:
         prev_price = anchor
@@ -79,43 +82,61 @@ def on_bar(ctx, bar):
 
     for i, lv in enumerate(LEVELS):
         if prev_price > lv >= price and i in bp:
+            if BUDGET > 0 and total_spent + AMT > BUDGET:
+                ctx.log("Budget cap reached (spent=%.2f + AMT=%.2f > %.2f), skip BUY grid %d" % (total_spent, AMT, BUDGET, i))
+                continue
             ctx.buy(price=lv, amount=AMT)
             bp.discard(i)
             if i + 1 < len(LEVELS):
                 sp.add(i + 1)
-            ctx.log("BUY grid %d @ %.4f (price %.4f)" % (i, lv, price))
+            total_spent += AMT
+            ctx.log("BUY grid %d @ %.4f (price %.4f, spent=%.2f)" % (i, lv, price, total_spent))
         elif prev_price < lv <= price and i in sp:
             ctx.sell(price=lv, amount=AMT)
             sp.discard(i)
             if i - 1 >= 0:
                 bp.add(i - 1)
-            ctx.log("SELL grid %d @ %.4f (price %.4f)" % (i, lv, price))
+            if total_spent >= AMT:
+                total_spent -= AMT
+            ctx.log("SELL grid %d @ %.4f (price %.4f, spent=%.2f)" % (i, lv, price, total_spent))
 
     ctx._params["bp"] = list(bp)
     ctx._params["sp"] = list(sp)
     ctx._params["prev_price"] = price
+    ctx._params["total_spent"] = total_spent
 `,
 
   // ========== 马丁格尔 ==========
   martingale: (params) => `# ---- Martingale Bot ----
+import time as _time
+
 INIT_AMT    = ${params.initialAmount}
 MULTIPLIER  = ${params.multiplier}
 MAX_LAYERS  = ${params.maxLayers}
 DROP_PCT    = ${params.priceDropPct} / 100.0
 TP_PCT      = ${params.takeProfitPct} / 100.0
 DIRECTION   = "${params.direction || 'long'}"
+ORDER_WAIT  = 120
+BUDGET      = ${params._initialCapital || 0}
 
 def on_init(ctx):
     ctx.param("layer", 0)
     ctx.param("last_entry_price", 0.0)
     ctx.param("total_cost", 0.0)
     ctx.param("total_qty", 0.0)
+    ctx.param("last_order_ts", 0)
 
 def _reset_state(ctx):
     ctx._params["layer"] = 0
     ctx._params["total_cost"] = 0.0
     ctx._params["total_qty"] = 0.0
     ctx._params["last_entry_price"] = 0.0
+    ctx._params["last_order_ts"] = 0
+
+def _budget_ok(cost, amt):
+    if BUDGET <= 0:
+        return True
+    return (cost + amt) <= BUDGET
 
 def on_bar(ctx, bar):
     price = bar.close
@@ -123,9 +144,14 @@ def on_bar(ctx, bar):
     last_entry = ctx.param("last_entry_price", 0.0)
     cost       = ctx.param("total_cost", 0.0)
     qty        = ctx.param("total_qty", 0.0)
+    last_ts    = ctx.param("last_order_ts", 0)
     has_pos    = ctx.position and float(ctx.position.get("size", 0)) > 0
+    now        = int(_time.time())
 
     if not has_pos and layer == 0:
+        if not _budget_ok(0, INIT_AMT):
+            ctx.log("Budget exhausted (%.2f), skip opening" % BUDGET)
+            return
         entry_qty = INIT_AMT / price if price > 0 else 0
         if DIRECTION == "long":
             ctx.buy(price=price, amount=INIT_AMT)
@@ -137,9 +163,13 @@ def on_bar(ctx, bar):
         ctx._params["last_entry_price"] = price
         ctx._params["total_cost"] = INIT_AMT
         ctx._params["total_qty"] = entry_qty
+        ctx._params["last_order_ts"] = now
         return
 
-    if not has_pos:
+    if not has_pos and layer > 0:
+        if last_ts > 0 and (now - last_ts) < ORDER_WAIT:
+            return
+        ctx.log("Position gone after wait, resetting (layer was %d)" % layer)
         _reset_state(ctx)
         return
 
@@ -161,6 +191,9 @@ def on_bar(ctx, bar):
 
     if add_hit:
         amt = INIT_AMT * (MULTIPLIER ** layer)
+        if not _budget_ok(cost, amt):
+            ctx.log("Budget cap reached (cost=%.2f + amt=%.2f > %.2f), skip add layer %d" % (cost, amt, BUDGET, layer + 1))
+            return
         add_qty = amt / price if price > 0 else 0
         if DIRECTION == "long":
             ctx.buy(price=price, amount=amt)
@@ -172,6 +205,7 @@ def on_bar(ctx, bar):
         ctx._params["last_entry_price"] = price
         ctx._params["total_cost"] = cost + amt
         ctx._params["total_qty"] = qty + add_qty
+        ctx._params["last_order_ts"] = now
 `,
 
   // ========== 趋势跟踪 ==========
@@ -283,6 +317,7 @@ INTERVAL_BARS  = ${intervalBars}
 
 def on_init(ctx):
     ctx.param("total_spent", 0.0)
+    ctx.param("total_qty", 0.0)
     ctx.param("buy_count", 0)
     ctx.param("bar_count", 0)
     ctx.param("last_buy_price", 0.0)
@@ -290,40 +325,45 @@ def on_init(ctx):
 def on_bar(ctx, bar):
     price       = bar.close
     total_spent = ctx.param("total_spent", 0.0)
+    total_qty   = ctx.param("total_qty", 0.0)
     buy_count   = ctx.param("buy_count", 0)
     bar_count   = ctx.param("bar_count", 0)
     last_price  = ctx.param("last_buy_price", 0.0)
+    has_pos     = ctx.position and float(ctx.position.get("size", 0)) > 0
 
     bar_count += 1
     ctx._params["bar_count"] = bar_count
 
-    if TOTAL_BUDGET > 0 and total_spent >= TOTAL_BUDGET:
+    budget_done = TOTAL_BUDGET > 0 and total_spent >= TOTAL_BUDGET
+    if budget_done and not has_pos:
         return
 
-    if bar_count < INTERVAL_BARS and buy_count > 0:
-        return
+    if not budget_done:
+        if bar_count >= INTERVAL_BARS or buy_count == 0:
+            amount = AMT_EACH
 
-    amount = AMT_EACH
+            if DIP_BUY and last_price > 0:
+                drop = (last_price - price) / last_price
+                if drop >= DIP_THRESHOLD:
+                    amount = AMT_EACH * 2
+                    ctx.log("DIP detected (%.2f%%), doubling buy" % (drop * 100))
 
-    if DIP_BUY and last_price > 0:
-        drop = (last_price - price) / last_price
-        if drop >= DIP_THRESHOLD:
-            amount = AMT_EACH * 2
-            ctx.log("DIP detected (%.2f%%), doubling buy" % (drop * 100))
+            if TOTAL_BUDGET > 0:
+                remaining = TOTAL_BUDGET - total_spent
+                if amount > remaining:
+                    amount = remaining
+                if amount <= 0:
+                    amount = 0
 
-    if TOTAL_BUDGET > 0:
-        remaining = TOTAL_BUDGET - total_spent
-        if amount > remaining:
-            amount = remaining
-        if amount <= 0:
-            return
-
-    ctx.buy(price=price, amount=amount)
-    ctx._params["total_spent"] = total_spent + amount
-    ctx._params["buy_count"] = buy_count + 1
-    ctx._params["bar_count"] = 0
-    ctx._params["last_buy_price"] = price
-    ctx.log("DCA #%d: BUY %.2f USDT @ %.6f (total: %.2f)" % (buy_count + 1, amount, price, total_spent + amount))
+            if amount > 0:
+                qty = amount / price if price > 0 else 0
+                ctx.buy(price=price, amount=amount)
+                ctx._params["total_spent"] = total_spent + amount
+                ctx._params["total_qty"] = total_qty + qty
+                ctx._params["buy_count"] = buy_count + 1
+                ctx._params["bar_count"] = 0
+                ctx._params["last_buy_price"] = price
+                ctx.log("DCA #%d: BUY %.2f USDT @ %.6f (total: %.2f)" % (buy_count + 1, amount, price, total_spent + amount))
 `
   }
 }

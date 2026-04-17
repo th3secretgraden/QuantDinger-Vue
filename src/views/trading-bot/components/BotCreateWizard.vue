@@ -156,8 +156,9 @@
               :formatter="v => `${v}%`"
               :parser="v => v.replace('%', '')"
             />
+            <div class="form-hint">{{ stopLossHint }}</div>
           </a-form-model-item>
-          <a-form-model-item :label="$t('trading-bot.risk.takeProfitPct')">
+          <a-form-model-item v-if="botType !== 'martingale'" :label="$t('trading-bot.risk.takeProfitPct')">
             <a-input-number
               v-model="riskForm.takeProfitPct"
               :min="0"
@@ -167,6 +168,12 @@
               :formatter="v => `${v}%`"
               :parser="v => v.replace('%', '')"
             />
+            <div class="form-hint">{{ takeProfitHint }}</div>
+          </a-form-model-item>
+          <a-form-model-item v-else :label="$t('trading-bot.risk.takeProfitPct')">
+            <span style="color: #8c8c8c; font-size: 13px;">
+              <a-icon type="info-circle" /> {{ martingaleTpNote }}
+            </span>
           </a-form-model-item>
           <a-form-model-item :label="$t('trading-bot.risk.maxPosition')">
             <a-input-number
@@ -176,6 +183,7 @@
               style="width: 100%"
               placeholder="USDT"
             />
+            <div class="form-hint">{{ maxPositionHint }}</div>
           </a-form-model-item>
           <a-form-model-item :label="$t('trading-bot.risk.maxDailyLoss')">
             <a-input-number
@@ -239,8 +247,11 @@
             <a-descriptions-item :label="$t('trading-bot.risk.stopLossPct')">
               {{ riskForm.stopLossPct }}%
             </a-descriptions-item>
-            <a-descriptions-item :label="$t('trading-bot.risk.takeProfitPct')">
+            <a-descriptions-item v-if="botType !== 'martingale'" :label="$t('trading-bot.risk.takeProfitPct')">
               {{ riskForm.takeProfitPct }}%
+            </a-descriptions-item>
+            <a-descriptions-item v-else :label="$t('trading-bot.risk.takeProfitPct')">
+              {{ martingaleTpNote }}
             </a-descriptions-item>
             <a-descriptions-item :label="$t('trading-bot.risk.maxPosition')">
               ${{ riskForm.maxPosition }}
@@ -383,6 +394,38 @@ export default {
     isGridOrMartingaleBot () {
       return this.botType === 'grid' || this.botType === 'martingale'
     },
+    isZhLocale () {
+      return String(this.$i18n?.locale || '').toLowerCase().startsWith('zh')
+    },
+    stopLossHint () {
+      const hints = {
+        grid: { zh: '价格偏离入场价超过此比例时，服务端强制平仓止损。设0为不启用。', en: 'Server closes position when price deviates beyond this % from entry. Set 0 to disable.' },
+        martingale: { zh: '当持仓亏损超过此比例时强制平仓（基于保证金比例）。100%即不触发。', en: 'Force close when loss exceeds this % of margin. 100% effectively disables it.' },
+        trend: { zh: '当均线信号来得太慢时，此止损作为安全网强制平仓。', en: 'Safety net: force close when loss exceeds this %, even if MA has not crossed back.' },
+        dca: { zh: '当持仓亏损超过此比例时平仓止损，保护已定投的本金。', en: 'Close position when unrealized loss exceeds this %, protecting DCA capital.' }
+      }
+      const h = hints[this.botType] || hints.grid
+      return this.isZhLocale ? h.zh : h.en
+    },
+    takeProfitHint () {
+      const hints = {
+        grid: { zh: '当持仓浮盈达到此比例时，服务端平仓止盈。网格策略会清空所有挂单状态。', en: 'Server closes position when floating profit reaches this %. Grid pending orders are cleared.' },
+        trend: { zh: '当持仓浮盈达到此比例时强制止盈，即使均线仍在同侧。', en: 'Force close when profit reaches this %, even if MA trend continues.' },
+        dca: { zh: '当持仓浮盈达到此比例时自动卖出止盈。设0为不启用。', en: 'Auto sell when profit reaches this %. Set 0 to disable.' }
+      }
+      const h = hints[this.botType] || hints.grid
+      return this.isZhLocale ? h.zh : h.en
+    },
+    martingaleTpNote () {
+      return this.isZhLocale
+        ? '马丁策略的止盈由"策略参数 → 止盈比例"控制，脚本会自动平仓并重置状态。'
+        : 'Martingale TP is managed by "Strategy Params → Take Profit %", the script auto-closes and resets.'
+    },
+    maxPositionHint () {
+      return this.isZhLocale
+        ? '这是整套策略允许持有的最大仓位金额上限，不是马丁补仓层数。'
+        : 'Caps the total position size for the strategy, not the number of martingale layers.'
+    },
     selectedCredentialLabel () {
       if (!this.baseForm.credentialId) return '-'
       const cred = this.credentials.find(c => c.id === this.baseForm.credentialId)
@@ -441,7 +484,7 @@ export default {
       this.baseForm.credentialId = bot.exchange_config?.credential_id || undefined
       this.currentExchangeId = (bot.exchange_config?.exchange_id || '').toLowerCase()
       if (tc.bot_params && typeof tc.bot_params === 'object') {
-        this.strategyParams = { ...tc.bot_params }
+        this.strategyParams = this.normalizeStrategyParams({ ...tc.bot_params })
       }
       this.riskForm.stopLossPct = tc.stop_loss_pct ?? 10
       this.riskForm.takeProfitPct = tc.take_profit_pct ?? 20
@@ -541,16 +584,21 @@ export default {
     },
     async buildPayload () {
       const strategyParams = this.normalizeStrategyParams(this.strategyParams)
+      const scriptParams = { ...strategyParams }
       if (this.botType === 'grid') {
         const existingRef = parseFloat(strategyParams.referencePrice)
         const fetchedRef = this.isEditMode ? null : await this.fetchGridReferencePrice()
         const refPrice = fetchedRef || (existingRef > 0 ? existingRef : null)
         if (refPrice > 0) {
           strategyParams.referencePrice = refPrice
+          scriptParams.referencePrice = refPrice
         }
       }
+      if (this.baseForm.initialCapital > 0) {
+        scriptParams._initialCapital = this.baseForm.initialCapital
+      }
       const effectiveTimeframe = this.isGridOrMartingaleBot ? '1m' : this.baseForm.timeframe
-      const strategyCode = generateBotScript(this.botType, strategyParams, {
+      const strategyCode = generateBotScript(this.botType, scriptParams, {
         timeframe: effectiveTimeframe
       })
       const leverage = this.baseForm.marketType === 'spot' ? 1 : (this.baseForm.leverage || 5)
@@ -575,7 +623,7 @@ export default {
           trade_direction: tradeDirection,
           initial_capital: this.baseForm.initialCapital,
           stop_loss_pct: this.riskForm.stopLossPct,
-          take_profit_pct: this.riskForm.takeProfitPct,
+          take_profit_pct: this.botType === 'martingale' ? 0 : this.riskForm.takeProfitPct,
           max_position: this.riskForm.maxPosition,
           max_daily_loss: this.riskForm.maxDailyLoss,
           bot_type: this.botType,

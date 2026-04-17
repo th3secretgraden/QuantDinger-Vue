@@ -343,7 +343,6 @@ const PARAM_LABEL_MAP = {
   multiplier: 'trading-bot.martingale.multiplier',
   maxLayers: 'trading-bot.martingale.maxLayers',
   priceDropPct: 'trading-bot.martingale.priceDropPct',
-  takeProfitPct: 'trading-bot.martingale.takeProfitPct',
   direction: 'trading-bot.martingale.direction',
   maPeriod: 'trading-bot.trend.maPeriod',
   maType: 'trading-bot.trend.maType',
@@ -381,7 +380,7 @@ export default {
     tc () { return this.bot?.trading_config || {} },
     botParams () { return this.tc.bot_params || {} },
     displayBotParams () {
-      const skip = new Set(['orderMode', 'timeframe'])
+      const skip = new Set(['orderMode', 'timeframe', 'takeProfitPct'])
       const out = {}
       for (const [k, v] of Object.entries(this.botParams)) {
         if (!skip.has(k) && v !== null && v !== undefined && v !== '') out[k] = v
