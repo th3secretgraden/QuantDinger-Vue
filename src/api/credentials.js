@@ -5,7 +5,8 @@ const api = {
   get: '/api/credentials/get',
   create: '/api/credentials/create',
   delete: '/api/credentials/delete',
-  egressIp: '/api/credentials/egress-ip'
+  egressIp: '/api/credentials/egress-ip',
+  desktopBrokersPolicy: '/api/credentials/desktop-brokers-policy'
 }
 
 export function listExchangeCredentials (params = {}) {
@@ -44,6 +45,14 @@ export function deleteExchangeCredential (id, params = {}) {
 export function getCredentialsEgressIp () {
   return request({
     url: api.egressIp,
+    method: 'get'
+  })
+}
+
+/** IBKR/MT5 allowed on this deployment (ALLOW_LOCAL_DESKTOP_BROKERS). */
+export function getDesktopBrokersPolicy () {
+  return request({
+    url: api.desktopBrokersPolicy,
     method: 'get'
   })
 }

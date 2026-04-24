@@ -2976,6 +2976,9 @@ const locale = {
 'profile.exchange.typeMT5': '外匯 (MetaTrader 5)',
 'profile.exchange.localDeploymentRequired': '需要本地部署',
 'profile.exchange.localDeploymentHint': '此券商需要在本地部署 QuantDinger 才能使用。',
+'profile.exchange.desktopBrokersDisabledTitle': '目前環境不支援 IBKR / MT5',
+'profile.exchange.desktopBrokersDisabledFallback': '請在個人電腦或私有伺服器本地部署本系統，並安裝 TWS、IB Gateway 或 MetaTrader 5。',
+'profile.exchange.desktopBrokersOptionSuffix': '雲端不可用',
 'profile.exchange.goToManage': '前往個人中心 → 交易所配置管理',
 'profile.exchange.noCredentialHint': '請先在個人中心添加交易所賬戶',
 

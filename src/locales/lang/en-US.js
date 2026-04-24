@@ -4419,6 +4419,9 @@ const locale = {
   'profile.exchange.typeMT5': 'Forex (MetaTrader 5)',
   'profile.exchange.localDeploymentRequired': 'Local deployment required',
   'profile.exchange.localDeploymentHint': 'This broker requires local deployment of QuantDinger to use.',
+  'profile.exchange.desktopBrokersDisabledTitle': 'IBKR / MT5 disabled on this server',
+  'profile.exchange.desktopBrokersDisabledFallback': 'Deploy QuantDinger on your own machine or private server and install TWS, IB Gateway, or MetaTrader 5.',
+  'profile.exchange.desktopBrokersOptionSuffix': 'Unavailable here',
   'profile.exchange.goToManage': 'Go to Profile → Exchange Config to manage',
   'profile.exchange.noCredentialHint': 'Please add an exchange account in Profile first',
 
