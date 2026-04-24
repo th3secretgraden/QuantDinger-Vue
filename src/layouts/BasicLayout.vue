@@ -240,7 +240,7 @@ export default {
       return (routes && routes.children) || []
     },
     appVersion () {
-      return defaultSettings.appVersion || '3.0.2'
+      return defaultSettings.appVersion || '3.0.3'
     },
     currentLogo () {
       const theme = this.settings.theme

@@ -3,6 +3,7 @@
     :title="$t('profile.exchange.addTitle')"
     :visible="visible"
     :wrap-class-name="modalWrapClass"
+    :get-container="exchangeModalGetContainer"
     :confirmLoading="savingExchange"
     :ok-button-props="{ disabled: saveDesktopBlocked }"
     @ok="handleSaveExchange"
@@ -25,7 +26,7 @@
         <a-select
           v-decorator="['exchange_id', { rules: [{ required: true, message: $t('profile.exchange.selectExchange') }] }]"
           :placeholder="$t('profile.exchange.selectExchange')"
-          :dropdown-class-name="isDarkTheme ? 'profile-exchange-select-dropdown-dark' : ''"
+          :dropdown-class-name="exchangeSelectDropdownClass"
           :get-popup-container="getExchangeSelectPopupContainer"
           @change="handleExchangeTypeChange"
         >
@@ -230,7 +231,9 @@ import { testExchangeConnection } from '@/api/strategy'
 export default {
   name: 'ExchangeAccountModal',
   props: {
-    visible: { type: Boolean, default: false }
+    visible: { type: Boolean, default: false },
+    /** 返回挂载节点；用于浏览器全屏时与图表同层（如指标 IDE 闪电交易） */
+    overlayMount: { type: Function, default: null }
   },
   data () {
     return {
@@ -271,6 +274,11 @@ export default {
       const base = 'profile-exchange-modal'
       return this.isDarkTheme ? `${base} ${base}--dark` : base
     },
+    /** 浅色也带基础类，便于 z-index 高于弹窗层（否则下拉在 Modal 后面）；暗色类名与下方 less 一致 */
+    exchangeSelectDropdownClass () {
+      const base = 'profile-exchange-select-dropdown'
+      return this.isDarkTheme ? `${base} profile-exchange-select-dropdown-dark` : base
+    },
     addExchangeNeedsPassphrase () {
       return ['okx', 'bitget', 'kucoin'].includes(this.selectedExchangeId)
     },
@@ -309,8 +317,15 @@ export default {
     this.exchangeForm = this.$form.createForm(this, { name: 'exchangeAccountModal' })
   },
   methods: {
-    getExchangeSelectPopupContainer () {
+    exchangeModalGetContainer () {
+      if (typeof this.overlayMount === 'function') {
+        const n = this.overlayMount()
+        return n || document.body
+      }
       return document.body
+    },
+    getExchangeSelectPopupContainer () {
+      return this.exchangeModalGetContainer()
     },
     handleCancel () {
       this.$emit('update:visible', false)

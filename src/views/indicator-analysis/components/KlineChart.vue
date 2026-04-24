@@ -1,5 +1,5 @@
 <template>
-  <div class="chart-left" :class="{ 'theme-dark': chartTheme === 'dark' }">
+  <div ref="chartRootEl" class="chart-left" :class="{ 'theme-dark': chartTheme === 'dark' }">
     <div class="chart-wrapper">
       <!-- 画线工具工具栏 -->
       <div class="drawing-toolbar">
@@ -123,6 +123,7 @@
       :confirmLoading="indicatorEditorSaving"
       :okText="$t('common.confirm')"
       :cancelText="$t('common.cancel')"
+      :get-container="chartModalGetContainer"
       :wrap-class-name="indicatorEditorModalWrapClass"
       @ok="applyIndicatorEditor"
       @cancel="closeIndicatorEditor"
@@ -223,8 +224,37 @@ export default {
     /** 父容器高度变化（如指标 IDE 拖拽分割条）不会触发 window.resize，需 ResizeObserver 调 chart.resize */
     let chartResizeObserver = null
     let chartResizeRafId = null
+    /** 成交量副图：VOL 只能创建一次；onDataReady/resize 仅做 layout，否则会叠很多层 VOL */
+    let volEnsureRafId = null
+    let volPaneEnsured = false
+    const VOL_PANE_OPTIONS = { height: 96, minHeight: 52, dragEnabled: true }
+    const syncVolumePaneLayout = () => {
+      if (!chartRef.value) return
+      if (!volPaneEnsured && typeof chartRef.value.createIndicator === 'function') {
+        try {
+          chartRef.value.createIndicator('VOL', false, VOL_PANE_OPTIONS)
+        } catch (e) {
+        }
+        volPaneEnsured = true
+      }
+      try {
+        if (typeof chartRef.value.resize === 'function') {
+          chartRef.value.resize()
+        }
+      } catch (e) {
+      }
+    }
+    const scheduleSyncVolumePaneLayout = () => {
+      if (volEnsureRafId != null) cancelAnimationFrame(volEnsureRafId)
+      volEnsureRafId = requestAnimationFrame(() => {
+        volEnsureRafId = null
+        syncVolumePaneLayout()
+      })
+    }
 
     const wmCanvasRef = ref(null)
+    /** 用于全屏时 Modal 挂到与 K 线同一全屏子树（见 chartModalGetContainer） */
+    const chartRootEl = ref(null)
     let _wmTimer = null
     let _wmObserver = null
 
@@ -565,6 +595,16 @@ export default {
     const indicatorEditorModalWrapClass = computed(() => {
       return chartTheme.value === 'dark' ? 'indicator-editor-modal indicator-editor-modal--dark' : 'indicator-editor-modal'
     })
+
+    /** 浏览器全屏时 ant Modal 默认挂 body 会不可见；若当前全屏元素包含本图表根则挂到该元素上 */
+    const chartModalGetContainer = () => {
+      try {
+        const root = chartRootEl.value
+        const fs = document.fullscreenElement || document.webkitFullscreenElement
+        if (root && fs && typeof fs.contains === 'function' && fs.contains(root)) return fs
+      } catch (_) {}
+      return document.body
+    }
 
     const indicatorEditorTitle = computed(() => {
       return indicatorEditorTarget.value
@@ -2871,6 +2911,7 @@ registerOverlay({
         } catch (e) {}
         chartRef.value = null
       }
+      volPaneEnsured = false
 
       try {
         // 初始化 KLineChart
@@ -2928,6 +2969,13 @@ registerOverlay({
         // 设置主题样式
         updateChartTheme()
         nextTick(() => _ensureWmLayer())
+
+        // 数据就绪后：仅首次创建 VOL，之后只 resize，避免重复 createIndicator 叠多层成交量
+        if (chartRef.value && typeof chartRef.value.subscribeAction === 'function') {
+          chartRef.value.subscribeAction('onDataReady', () => {
+            scheduleSyncVolumePaneLayout()
+          })
+        }
 
         // 监听覆盖物创建完成事件，自动退出绘制模式
         if (chartRef.value && typeof chartRef.value.subscribeAction === 'function') {
@@ -3098,11 +3146,7 @@ registerOverlay({
               }
             }
 
-            // 创建成交量指标（默认显示）
-            try {
-              chartRef.value.createIndicator('VOL', false, { height: 100, dragEnabled: true })
-            } catch (e) {
-            }
+            // 成交量副图由 onDataReady → scheduleSyncVolumePaneLayout 统一处理（仅首次创建 VOL）
 
             // 延迟更新指标，确保K线先渲染
             nextTick(() => {
@@ -3505,10 +3549,10 @@ registerOverlay({
 
                     // 确定是否叠加在主图上（如果所有 plots 都是 overlay，则叠加）
                     const allOverlay = validPlots.every(plot => plot.overlay !== false)
-                    // const customIndicatorName = `${indicator.id}_combined`
-                    let customIndicatorName = `${indicator.id}_combined`
+                    const pyNameKey = String(indicator.instanceId || indicator.id || `py_${idx}`).replace(/[^a-zA-Z0-9_-]/g, '_')
+                    let customIndicatorName = `${pyNameKey}_combined`
                     if (result && result.name) {
-                      customIndicatorName = result.name
+                      customIndicatorName = `${pyNameKey}_${String(result.name)}`
                     }
                     try {
                       // 注册合并的自定义指标
@@ -3719,10 +3763,10 @@ registerOverlay({
 
                     // 确定是否叠加在主图上（如果所有 plots 都是 overlay，则叠加）
                     const allOverlay = validPlots.every(plot => plot.overlay !== false)
-                    // const customIndicatorName = `${indicator.id}_combined`
-                    let customIndicatorName = `${indicator.id}_combined`
+                    const pyNameKey2 = String(indicator.instanceId || indicator.id || `py_${idx}`).replace(/[^a-zA-Z0-9_-]/g, '_')
+                    let customIndicatorName = `${pyNameKey2}_combined`
                     if (pythonResult && pythonResult.name) {
-                      customIndicatorName = pythonResult.name
+                      customIndicatorName = `${pyNameKey2}_${String(pythonResult.name)}`
                     }
 
                     try {
@@ -4361,6 +4405,7 @@ registerOverlay({
             chartResizeRafId = null
             if (chartRef.value && typeof chartRef.value.resize === 'function') {
               chartRef.value.resize()
+              scheduleSyncVolumePaneLayout()
             } else {
               const c = document.getElementById('kline-chart-container')
               if (c && c.clientWidth > 0 && c.clientHeight > 0) {
@@ -4462,6 +4507,10 @@ registerOverlay({
         cancelAnimationFrame(chartResizeRafId)
         chartResizeRafId = null
       }
+      if (volEnsureRafId != null) {
+        cancelAnimationFrame(volEnsureRafId)
+        volEnsureRafId = null
+      }
       if (chartResizeObserver) {
         chartResizeObserver.disconnect()
         chartResizeObserver = null
@@ -4472,6 +4521,7 @@ registerOverlay({
         chartRef.value.destroy()
         chartRef.value = null
       }
+      volPaneEnsured = false
       window.removeEventListener('resize', handleResize)
     })
 
@@ -4484,6 +4534,8 @@ registerOverlay({
       chartTheme,
       themeConfig,
       wmCanvasRef,
+      chartRootEl,
+      chartModalGetContainer,
       getIndicatorColor,
       handleRetry,
       loadingPython,

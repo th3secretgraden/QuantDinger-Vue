@@ -1,128 +1,30 @@
 <template>
   <div class="indicator-ide" :class="{ 'theme-dark': isDarkTheme }">
-    <!-- Header toolbar -->
-    <div class="ide-toolbar">
-      <div class="toolbar-left">
-        <div class="ide-toolbar-code-slot">
-          <a-tooltip :title="codeDrawerVisible ? $t('indicatorIde.hideCode') : $t('indicatorIde.showCode')">
-            <a-button
-              class="ide-toolbar-icon-btn"
-              size="small"
-              :type="codeDrawerVisible ? 'primary' : 'default'"
-              @click="codeDrawerVisible = !codeDrawerVisible"
-            >
-              <a-icon type="code" />
-            </a-button>
-          </a-tooltip>
-        </div>
-
-        <div class="ide-toolbar-group ide-toolbar-group--watchlist">
-          <span class="ide-toolbar-label">{{ $t('indicatorIde.toolbar.watchlist') }}</span>
-          <a-select
-            v-model="selectedWatchlistKey"
-            class="ide-toolbar-select ide-toolbar-select--watchlist"
-            :placeholder="$t('backtest-center.config.watchlistPlaceholder')"
-            size="small"
-            show-search
-            allow-clear
-            :filter-option="filterWatchlistOption"
-            :dropdown-class-name="isDarkTheme ? 'ide-watchlist-dropdown ide-watchlist-dropdown--dark' : 'ide-watchlist-dropdown'"
-            @change="handleWatchlistChange"
-          >
-            <a-select-option
-              v-for="w in watchlist"
-              :key="`${w.market}:${w.symbol}`"
-              :value="`${w.market}:${w.symbol}`"
-            >
-              <span class="wl-opt-tag" :class="'wl-mkt-' + (w.market || '').toLowerCase()">{{ marketLabel(w.market) }}</span>
-              <strong class="wl-opt-symbol">{{ w.symbol }}</strong>
-              <span v-if="w.name" class="wl-opt-name">{{ w.name }}</span>
-            </a-select-option>
-            <a-select-option key="__add__" value="__add__" class="add-option">
-              <div class="ide-watchlist-add-row">
-                <a-icon type="plus" /> {{ $t('backtest-center.config.addSymbol') }}
-              </div>
-            </a-select-option>
-          </a-select>
-        </div>
-
-        <div class="ide-toolbar-group ide-toolbar-group--tf">
-          <span class="ide-toolbar-label">{{ $t('indicatorIde.toolbar.timeframe') }}</span>
-          <a-radio-group
-            v-model="timeframe"
-            button-style="solid"
-            size="small"
-            class="tf-group ide-tf-seg"
-          >
-            <a-radio-button value="1m">1m</a-radio-button>
-            <a-radio-button value="5m">5m</a-radio-button>
-            <a-radio-button value="15m">15m</a-radio-button>
-            <a-radio-button value="1H">1H</a-radio-button>
-            <a-radio-button value="4H">4H</a-radio-button>
-            <a-radio-button value="1D">1D</a-radio-button>
-            <a-radio-button value="1W">1W</a-radio-button>
-          </a-radio-group>
-        </div>
-
-        <div class="ide-toolbar-group ide-toolbar-group--indicator">
-          <span class="ide-toolbar-label">{{ $t('indicatorIde.toolbar.indicator') }}</span>
-          <a-select
-            v-model="selectedIndicatorId"
-            class="ide-toolbar-select ide-toolbar-select--indicator"
-            :placeholder="$t('backtest-center.indicator.selectIndicatorPlaceholder')"
-            size="small"
-            :loading="loadingIndicators"
-            allow-clear
-            show-search
-            option-filter-prop="children"
-            @change="onIndicatorChange"
-          >
-            <a-select-option
-              v-for="ind in indicators"
-              :key="ind.id"
-              :value="ind.id"
-            >
-              <span>{{ ind.name || ('Indicator #' + ind.id) }}</span>
-              <a-tag
-                v-if="Number(ind.is_buy) === 1"
-                color="purple"
-                style="margin-left: 6px; font-size: 10px; line-height: 16px; padding: 0 4px;"
-              >{{ $t('indicatorIde.purchasedBadge') }}</a-tag>
-            </a-select-option>
-          </a-select>
-        </div>
-
-      </div>
-
-      <div class="toolbar-right">
-        <a-tooltip placement="bottomLeft">
-          <template slot="title">
-            {{ quickTradeDrawerVisible ? $t('indicatorIde.hideQuickTrade') : $t('indicatorIde.showQuickTrade') }}
-          </template>
-          <a-button
-            class="ide-toolbar-qt-btn"
-            size="small"
-            :type="quickTradeDrawerVisible ? 'primary' : 'default'"
-            @click="toggleQuickTradeDrawer"
-          >
-            <a-icon type="thunderbolt" theme="filled" />
-            <span class="ide-toolbar-qt-label">{{ $t('quickTrade.title') }}</span>
-          </a-button>
-        </a-tooltip>
-      </div>
-    </div>
-
     <!-- Main split panels -->
     <div class="ide-main">
+      <!-- 代码栏隐藏时：左侧窄条标签，点击抽出代码栏 -->
+      <div
+        v-show="!codeDrawerVisible"
+        class="ide-code-rail"
+        role="button"
+        tabindex="0"
+        @click="codeDrawerVisible = true"
+        @keyup.enter="codeDrawerVisible = true"
+      >
+        <a-icon type="code" class="ide-code-rail__icon" />
+        <span class="ide-code-rail__label">{{ $t('indicatorIde.codeRailLabel') }}</span>
+      </div>
       <!-- Left panel (collapsible drawer) -->
-      <div v-show="codeDrawerVisible" class="ide-left">
+      <div v-show="codeDrawerVisible" ref="editorFullscreenEl" class="ide-left" :class="{ 'ide-panel--fullscreen': editorFullscreen }">
         <!-- Code Editor (collapsible) -->
         <div class="code-panel" :class="{ collapsed: !codePanelExpanded }">
           <div class="panel-title" @click="codePanelExpanded = !codePanelExpanded" style="cursor: pointer;">
-            <a-icon type="code" />
-            <span>{{ $t('indicatorIde.codeEditor') }}</span>
-            <a-tag v-if="codeDirty && !selectedIndicatorIsPurchased" color="orange" size="small" style="margin-left: 8px;">{{ $t('indicatorIde.modified') }}</a-tag>
-            <a-tag v-if="selectedIndicatorIsPurchased" color="purple" size="small" style="margin-left: 8px;">{{ $t('indicatorIde.purchasedReadOnlyTag') }}</a-tag>
+            <div class="panel-title__leading">
+              <a-icon type="code" />
+              <a-tag v-if="codeDirty && !selectedIndicatorIsPurchased" color="orange" size="small">{{ $t('indicatorIde.modified') }}</a-tag>
+              <a-tag v-if="selectedIndicatorIsPurchased" color="purple" size="small">{{ $t('indicatorIde.purchasedReadOnlyTag') }}</a-tag>
+            </div>
+            <div class="panel-title__trailing">
             <div class="panel-title-actions" @click.stop>
               <a-tooltip :title="$t('dashboard.indicator.create')">
                 <a-button size="small" :loading="creatingIndicator" @click="handleCreateIndicator"><a-icon type="plus" /></a-button>
@@ -147,6 +49,9 @@
               <a-tooltip :title="$t('indicatorIde.saveAsNew')">
                 <a-button size="small" :disabled="!userId || !currentCode" @click="openSaveAsIndicatorModal"><a-icon type="copy" /></a-button>
               </a-tooltip>
+              <a-tooltip :title="editorFullscreen ? $t('indicatorIde.exitFullscreen') : $t('indicatorIde.fullscreenEditor')">
+                <a-button size="small" @click="toggleEditorFullscreen"><a-icon :type="editorFullscreen ? 'fullscreen-exit' : 'fullscreen'" /></a-button>
+              </a-tooltip>
               <a-tooltip :title="chartIndicatorRunning ? $t('indicatorIde.stopIndicatorOnChart') : $t('indicatorIde.runIndicatorOnChart')">
                 <a-button
                   size="small"
@@ -157,7 +62,8 @@
                 </a-button>
               </a-tooltip>
             </div>
-            <a-icon :type="codePanelExpanded ? 'up' : 'down'" style="margin-left: auto;" />
+              <a-icon :type="codePanelExpanded ? 'up' : 'down'" class="panel-title-chevron" />
+            </div>
           </div>
           <div v-show="codePanelExpanded" class="code-panel-body">
             <div class="ide-guide-bar">
@@ -296,30 +202,205 @@
             </div>
           </div>
         </div>
-
+        <div class="ide-code-drawer-handle" @click.stop="codeDrawerVisible = false">
+          <a-icon type="double-left" />
+          <span>{{ $t('indicatorIde.hideCode') }}</span>
+        </div>
       </div>
 
-      <!-- Right panel (chart + results) -->
-      <div class="ide-right">
-        <div class="chart-panel" :style="{ flex: 'none', height: chartPanelHeight + 'px' }">
-          <kline-chart
-            ref="klineChart"
-            :symbol="symbol"
-            :market="market"
-            :timeframe="timeframe"
-            :theme="chartTheme"
-            :activeIndicators="activeIndicators"
-            :userId="userId"
-            :realtime-enabled="klineRealtimeEnabled"
-            @indicator-toggle="handleIndicatorToggle"
-          />
-        </div>
+      <!-- Right panel：图表与闪电交易 / 回测与结果 分页，避免回测区挤在图表卡片下方 -->
+      <div class="ide-right ide-right--workspace">
+        <a-tabs v-model="ideWorkspaceTab" type="card" size="small" class="ide-workspace-tabs ide-workspace-tabs--pill" :animated="false">
+          <a-tab-pane key="chart" :tab="$t('indicatorIde.workspaceTabChart')">
+            <div class="ide-workspace-pane ide-workspace-pane--chart">
         <div
-          class="ide-resize-handle"
-          @mousedown="startResizePanel"
+          ref="chartFullscreenEl"
+          class="ide-chart-fs-root"
+          :class="{ 'ide-panel--fullscreen': chartFullscreen }"
         >
-          <span class="ide-resize-handle-dots"></span>
+          <div class="ide-chart-fs-row">
+            <div class="chart-panel">
+              <div class="chart-panel-toolbar">
+                <div class="chart-panel-toolbar-top">
+                  <span class="chart-panel-toolbar-title">{{ $t('indicatorIde.chartWindow') }}</span>
+                  <div class="chart-panel-toolbar-top-actions">
+                    <a-tooltip :title="codeDrawerVisible ? $t('indicatorIde.hideCode') : $t('indicatorIde.showCode')">
+                      <a-button
+                        size="small"
+                        class="chart-panel-icon-btn"
+                        :type="codeDrawerVisible ? 'default' : 'primary'"
+                        @click="codeDrawerVisible = !codeDrawerVisible"
+                      >
+                        <a-icon type="code" />
+                      </a-button>
+                    </a-tooltip>
+                    <a-tooltip placement="bottomLeft">
+                      <template slot="title">
+                        {{ quickTradeDrawerVisible ? $t('indicatorIde.hideQuickTrade') : $t('indicatorIde.showQuickTrade') }}
+                      </template>
+                      <a-button
+                        class="chart-panel-qt-btn"
+                        size="small"
+                        :type="quickTradeDrawerVisible ? 'primary' : 'default'"
+                        @click="toggleQuickTradeDrawer"
+                      >
+                        <a-icon type="thunderbolt" theme="filled" />
+                        <span class="chart-panel-qt-label">{{ $t('quickTrade.title') }}</span>
+                      </a-button>
+                    </a-tooltip>
+                    <a-tooltip :title="chartFullscreen ? $t('indicatorIde.exitFullscreen') : $t('indicatorIde.fullscreenChart')">
+                      <a-button size="small" class="chart-panel-fs-btn" @click="toggleChartFullscreen"><a-icon :type="chartFullscreen ? 'fullscreen-exit' : 'fullscreen'" /></a-button>
+                    </a-tooltip>
+                  </div>
+                </div>
+                <div class="chart-panel-toolbar-controls">
+                  <div class="ide-toolbar-group ide-toolbar-group--watchlist">
+                    <span class="ide-toolbar-label">{{ $t('indicatorIde.toolbar.watchlist') }}</span>
+                    <a-select
+                      v-model="selectedWatchlistKey"
+                      class="ide-toolbar-select ide-toolbar-select--watchlist chart-panel-watchlist-select"
+                      :placeholder="$t('backtest-center.config.watchlistPlaceholder')"
+                      size="small"
+                      show-search
+                      allow-clear
+                      :filter-option="filterWatchlistOption"
+                      :dropdown-class-name="isDarkTheme ? 'ide-watchlist-dropdown ide-watchlist-dropdown--dark' : 'ide-watchlist-dropdown'"
+                      :get-popup-container="chartToolbarGetPopupContainer"
+                      @change="handleWatchlistChange"
+                    >
+                      <a-select-option
+                        v-for="w in watchlist"
+                        :key="`${w.market}:${w.symbol}`"
+                        :value="`${w.market}:${w.symbol}`"
+                      >
+                        <span class="wl-opt-tag" :class="'wl-mkt-' + (w.market || '').toLowerCase()">{{ marketLabel(w.market) }}</span>
+                        <strong class="wl-opt-symbol">{{ w.symbol }}</strong>
+                        <span v-if="w.name" class="wl-opt-name">{{ w.name }}</span>
+                      </a-select-option>
+                      <a-select-option key="__add__" value="__add__" class="add-option">
+                        <div class="ide-watchlist-add-row">
+                          <a-icon type="plus" /> {{ $t('backtest-center.config.addSymbol') }}
+                        </div>
+                      </a-select-option>
+                    </a-select>
+                  </div>
+                  <div class="ide-toolbar-group ide-toolbar-group--tf">
+                    <span class="ide-toolbar-label">{{ $t('indicatorIde.toolbar.timeframe') }}</span>
+                    <a-radio-group
+                      v-model="timeframe"
+                      button-style="solid"
+                      size="small"
+                      class="tf-group ide-tf-seg ide-tf-seg--chart"
+                    >
+                      <a-radio-button value="1m">1m</a-radio-button>
+                      <a-radio-button value="5m">5m</a-radio-button>
+                      <a-radio-button value="15m">15m</a-radio-button>
+                      <a-radio-button value="30m">30m</a-radio-button>
+                      <a-radio-button value="1H">1H</a-radio-button>
+                      <a-radio-button value="4H">4H</a-radio-button>
+                      <a-radio-button value="1D">1D</a-radio-button>
+                      <a-radio-button value="1W">1W</a-radio-button>
+                    </a-radio-group>
+                  </div>
+                  <div class="ide-toolbar-group ide-toolbar-group--indicator">
+                    <span class="ide-toolbar-label">{{ $t('indicatorIde.toolbar.indicator') }}</span>
+                    <a-dropdown
+                      :trigger="['click']"
+                      placement="bottomLeft"
+                      :visible="indicatorDropdownVisible"
+                      :get-popup-container="chartToolbarGetPopupContainer"
+                      @visibleChange="onIndicatorDropdownVisibleChange"
+                      :overlay-class-name="isDarkTheme ? 'ide-indicator-multiselect-dropdown ide-indicator-multiselect-dropdown--dark' : 'ide-indicator-multiselect-dropdown'"
+                    >
+                      <a-button
+                        size="small"
+                        class="ide-toolbar-select ide-toolbar-select--indicator ide-indicator-multiselect-trigger"
+                        :loading="loadingIndicators"
+                      >
+                        <span class="ide-indicator-trigger-text">{{ indicatorToolbarSummary }}</span>
+                        <a-icon type="down" />
+                      </a-button>
+                      <div slot="overlay" class="ide-indicator-overlay" @mousedown.stop @click.stop>
+                        <div class="ide-indicator-overlay-hint">{{ $t('indicatorIde.chartPickHint') }}</div>
+                        <a-spin v-if="loadingIndicators" size="small" style="padding: 12px;" />
+                        <div v-else-if="!indicators.length" class="ide-indicator-overlay-empty">{{ $t('indicatorIde.noIndicatorsYet') }}</div>
+                        <div v-else class="ide-indicator-overlay-list">
+                          <div
+                            v-for="ind in indicators"
+                            :key="'ind-row-' + ind.id"
+                            class="ide-indicator-row"
+                          >
+                            <a-checkbox
+                              :checked="isIndicatorChartVisible(ind.id)"
+                              @change="e => onChartIndicatorCheckChange(ind.id, e.target.checked)"
+                            />
+                            <span
+                              class="ide-indicator-name"
+                              :class="{ active: Number(selectedIndicatorId) === Number(ind.id) }"
+                              @click="selectEditorIndicator(ind.id)"
+                            >{{ ind.name || ('Indicator #' + ind.id) }}</span>
+                            <a-tag
+                              v-if="Number(ind.is_buy) === 1"
+                              color="purple"
+                              class="ide-indicator-purchased-tag"
+                            >{{ $t('indicatorIde.purchasedBadge') }}</a-tag>
+                          </div>
+                        </div>
+                      </div>
+                    </a-dropdown>
+                  </div>
+                </div>
+              </div>
+              <div class="chart-panel-inner">
+                <kline-chart
+                  ref="klineChart"
+                  :symbol="symbol"
+                  :market="market"
+                  :timeframe="timeframe"
+                  :theme="chartTheme"
+                  :activeIndicators="activeIndicators"
+                  :userId="userId"
+                  :realtime-enabled="klineRealtimeEnabled"
+                  @indicator-toggle="handleIndicatorToggle"
+                />
+              </div>
+            </div>
+            <!-- 闪电交易与图表同在全屏根节点内，避免浏览器全屏层遮挡 -->
+            <div v-show="quickTradeDrawerVisible" class="ide-quick-right ide-quick-right--chart-fs">
+              <div class="ide-quick-panel-head">
+                <span class="ide-quick-panel-head-title">
+                  <a-icon type="thunderbolt" theme="filled" class="ide-quick-panel-head-icon" />
+                  {{ $t('quickTrade.title') }}
+                </span>
+                <a-button type="link" size="small" class="ide-quick-panel-close" @click="closeQuickTradeDrawer">
+                  <a-icon type="close" />
+                </a-button>
+              </div>
+              <div class="ide-quick-panel-body">
+                <quick-trade-panel
+                  key="ide-embedded-qt"
+                  embedded
+                  embedded-ide
+                  :visible="true"
+                  :symbol="qtSymbol"
+                  :preset-side="qtSide"
+                  :preset-price="qtPrice"
+                  source="indicator"
+                  market-type="swap"
+                  :overlay-get-container="ideQtOverlayGetContainer"
+                  @order-success="onQuickTradeSuccess"
+                  @update:symbol="handleQuickTradeSymbolChange"
+                />
+              </div>
+            </div>
+          </div>
         </div>
+            </div>
+          </a-tab-pane>
+          <a-tab-pane key="backtest" :tab="$t('indicatorIde.workspaceTabBacktest')">
+            <!-- 独立滚动层：Ant Tabs 的 tabpane 默认高度链不完整，仅靠 height:100% 会导致子级无法出现滚动条 -->
+            <div class="ide-backtest-scroll-mount">
+            <div class="ide-workspace-pane ide-workspace-pane--backtest">
         <div class="result-panel">
           <div class="params-card">
             <div class="params-card-header" @click="paramsPanelExpanded = !paramsPanelExpanded">
@@ -875,34 +956,10 @@
             </a-tab-pane>
           </a-tabs>
         </div>
-      </div>
-
-      <!-- 闪电交易：与左侧代码区相同，主布局内右侧抽拉（非全屏悬浮） -->
-      <div v-show="quickTradeDrawerVisible" class="ide-quick-right">
-        <div class="ide-quick-panel-head">
-          <span class="ide-quick-panel-head-title">
-            <a-icon type="thunderbolt" theme="filled" class="ide-quick-panel-head-icon" />
-            {{ $t('quickTrade.title') }}
-          </span>
-          <a-button type="link" size="small" class="ide-quick-panel-close" @click="closeQuickTradeDrawer">
-            <a-icon type="close" />
-          </a-button>
-        </div>
-        <div class="ide-quick-panel-body">
-          <quick-trade-panel
-            key="ide-embedded-qt"
-            embedded
-            embedded-ide
-            :visible="true"
-            :symbol="qtSymbol"
-            :preset-side="qtSide"
-            :preset-price="qtPrice"
-            source="indicator"
-            market-type="swap"
-            @order-success="onQuickTradeSuccess"
-            @update:symbol="handleQuickTradeSymbolChange"
-          />
-        </div>
+            </div>
+            </div>
+          </a-tab-pane>
+        </a-tabs>
       </div>
 
     </div>
@@ -915,6 +972,7 @@
       @cancel="showAddModal = false"
       :confirmLoading="addingStock"
       width="560px"
+      :get-container="ideModalGetContainer"
       :wrap-class-name="isDarkTheme ? 'ide-modal-wrap ide-modal-wrap--dark' : 'ide-modal-wrap'"
     >
       <a-tabs v-model="addMarketTab" size="small" class="ide-add-market-tabs" @change="onAddMarketTabChange">
@@ -975,6 +1033,7 @@
       :confirmLoading="publishing"
       :okText="publishIndicator && publishIndicator.publish_to_community ? $t('dashboard.indicator.publish.update') : $t('dashboard.indicator.publish.confirm')"
       :cancelText="$t('dashboard.indicator.editor.cancel')"
+      :get-container="ideModalGetContainer"
       :wrap-class-name="isDarkTheme ? 'ide-modal-wrap ide-modal-wrap--dark' : 'ide-modal-wrap'"
       @ok="handleConfirmPublish"
       @cancel="showPublishModal = false; publishIndicator = null"
@@ -1021,6 +1080,7 @@
       :confirmLoading="savingAs"
       :okText="$t('indicatorIde.saveAsConfirm')"
       :cancelText="$t('dashboard.indicator.editor.cancel')"
+      :get-container="ideModalGetContainer"
       :wrap-class-name="isDarkTheme ? 'ide-modal-wrap ide-modal-wrap--dark' : 'ide-modal-wrap'"
       @ok="confirmSaveAsIndicator"
       @cancel="showSaveAsModal = false"
@@ -1056,6 +1116,7 @@ import KlineChart from '@/views/indicator-analysis/components/KlineChart.vue'
 import BacktestHistoryDrawer from '@/views/indicator-analysis/components/BacktestHistoryDrawer.vue'
 import QuickTradePanel from '@/components/QuickTradePanel/QuickTradePanel'
 import { Modal } from 'ant-design-vue'
+import message from 'ant-design-vue/es/message'
 
 const TF_MAX_DAYS = {
   '1m': 30,
@@ -1100,6 +1161,11 @@ export default {
       indicators: [],
       loadingIndicators: false,
       selectedIndicatorId: undefined,
+      /** 勾选显示在 K 线上的指标 id（可多选）；与「当前编辑」selectedIndicatorId 独立 */
+      chartVisibleIndicatorIds: [],
+      indicatorDropdownVisible: false,
+      editorFullscreen: false,
+      chartFullscreen: false,
       currentCode: '',
       codeDirty: false,
       cmInstance: null,
@@ -1110,9 +1176,8 @@ export default {
       /** 已购指标说明条：用户关闭后按账号写入 storage，不再展示 */
       purchasedMarketHintDismissed: false,
 
-      chartPanelHeight: 340,
-      resizeDragStartY: 0,
-      resizeDragStartH: 0,
+      /** 右侧工作区：chart=图表与闪电交易，backtest=回测参数与结果 */
+      ideWorkspaceTab: 'chart',
 
       market: 'Crypto',
       symbol: 'BTC/USDT',
@@ -1232,6 +1297,10 @@ export default {
     },
     chartTheme () {
       return this.isDarkTheme ? 'dark' : 'light'
+    },
+    /** 绑定 this，供闪电交易子组件内调用 chartToolbarGetPopupContainer */
+    ideQtOverlayGetContainer () {
+      return (trigger) => this.chartToolbarGetPopupContainer(trigger)
     },
     /** 有标的时开启 K 线轮询更新（与指标分析页一致） */
     klineRealtimeEnabled () {
@@ -1414,7 +1483,23 @@ export default {
     },
     chartIndicatorToggleDisabled () {
       if (this.chartIndicatorRunning) return false
-      return !this.selectedIndicatorId || !(this.currentCode && String(this.currentCode).trim())
+      if (!this.chartVisibleIndicatorIds.length) return true
+      return !this.chartVisibleIndicatorIds.some((rawId) => {
+        const id = Number(rawId)
+        const ind = this.indicators.find(i => Number(i.id) === id)
+        const code = Number(this.selectedIndicatorId) === id
+          ? (this.currentCode || (ind && ind.code) || '')
+          : ((ind && ind.code) || '')
+        return code && String(code).trim()
+      })
+    },
+    indicatorToolbarSummary () {
+      const ed = this.selectedIndicatorObj
+      const edLabel = ed ? (ed.name || ('#' + ed.id)) : '--'
+      const n = (this.chartVisibleIndicatorIds && this.chartVisibleIndicatorIds.length) || 0
+      if (!this.indicators.length) return this.$t('indicatorIde.noIndicatorsYet')
+      if (!n) return `${edLabel} · ${this.$t('indicatorIde.indicatorPickPlaceholder')}`
+      return `${edLabel} · ${this.$t('indicatorIde.indicatorCountOnChart', { n })}`
     },
     pairedTrades () {
       const raw = (this.result && this.result.trades) || []
@@ -1471,9 +1556,13 @@ export default {
     this.autoSelectFirstIndicator()
   },
   mounted () {
+    this._fullscreenListener = () => this.onGlobalFullscreenChange()
+    document.addEventListener('fullscreenchange', this._fullscreenListener)
+    document.addEventListener('webkitfullscreenchange', this._fullscreenListener)
     this.$nextTick(() => {
       this.initCodeMirror()
       this.ensureChartReady()
+      this.applyIdeOverlayContainers()
     })
   },
   beforeDestroy () {
@@ -1498,6 +1587,15 @@ export default {
       this.experimentAbortController = null
     }
     window.removeEventListener('resize', this._onResize)
+    if (this._fullscreenListener) {
+      document.removeEventListener('fullscreenchange', this._fullscreenListener)
+      document.removeEventListener('webkitfullscreenchange', this._fullscreenListener)
+      this._fullscreenListener = null
+    }
+    try {
+      message.destroy()
+      message.config({ getContainer: () => document.body })
+    } catch (_) {}
   },
   methods: {
     // ===== Data loading =====
@@ -1534,8 +1632,16 @@ export default {
         if (raw == null || raw === '') return
         const s = typeof raw === 'string' ? JSON.parse(raw) : raw
         if (!s || typeof s !== 'object') return
+        let hadChartVisibleKey = false
         if (Array.isArray(s.activeIndicators)) {
           this.activeIndicators = this.normalizePersistedChartIndicators(s.activeIndicators)
+        }
+        if (Array.isArray(s.chartVisibleIndicatorIds)) {
+          hadChartVisibleKey = true
+          const valid = s.chartVisibleIndicatorIds
+            .map(Number)
+            .filter(id => !isNaN(id) && this.indicators.some(i => Number(i.id) === id))
+          this.chartVisibleIndicatorIds = valid
         }
         if (s.timeframe && Object.prototype.hasOwnProperty.call(TF_MAX_DAYS, s.timeframe)) {
           this.timeframe = s.timeframe
@@ -1561,6 +1667,11 @@ export default {
             this.onIndicatorChange(id)
           }
         }
+        if (!hadChartVisibleKey && !this.chartVisibleIndicatorIds.length && this.selectedIndicatorId != null) {
+          this.chartVisibleIndicatorIds = [Number(this.selectedIndicatorId)]
+          this.syncSelectedIndicatorToChart()
+        }
+        this.reconcileIdeMarketFromWatchlist()
       } catch (_) { /* ignore corrupt cache */ }
     },
 
@@ -1580,6 +1691,7 @@ export default {
           symbol: this.symbol,
           timeframe: this.timeframe,
           selectedIndicatorId: this.selectedIndicatorId,
+          chartVisibleIndicatorIds: this.chartVisibleIndicatorIds,
           selectedWatchlistKey: this.selectedWatchlistKey,
           activeIndicators: this.serializeChartIndicators()
         }
@@ -1589,7 +1701,7 @@ export default {
     normalizePersistedChartIndicators (items) {
       if (!Array.isArray(items)) return []
       return items
-        .filter(item => item && item.id && item.id !== 'selected-python-indicator' && item.type !== 'python')
+        .filter(item => item && item.id && item.id !== 'selected-python-indicator' && item.type !== 'python' && !String(item.id).startsWith('ide-py-'))
         .map(item => ({
           id: item.id,
           instanceId: item.instanceId || `${item.id}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
@@ -1619,23 +1731,49 @@ export default {
         console.warn('Load indicators failed:', e)
       } finally {
         this.loadingIndicators = false
+        this.pruneChartVisibleIndicatorIds()
       }
+    },
+    pruneChartVisibleIndicatorIds () {
+      const set = new Set(this.indicators.map(i => Number(i.id)))
+      this.chartVisibleIndicatorIds = (this.chartVisibleIndicatorIds || []).filter(id => set.has(Number(id)))
     },
     async loadWatchlist () {
       if (!this.userId) return
       try {
         const res = await getWatchlist({ userid: this.userId })
         if (res && res.code === 1 && res.data) this.watchlist = res.data
+        this.reconcileIdeMarketFromWatchlist()
       } catch { /* silent */ }
+    },
+
+    /**
+     * 以自选列表中的 market 字段为准（用户添加自选时的分类），避免仅靠 `market:symbol` 字符串解析或本地缓存漂移。
+     */
+    reconcileIdeMarketFromWatchlist () {
+      const key = this.selectedWatchlistKey
+      if (!key || key === '__add__') return
+      const row = (this.watchlist || []).find(
+        w => w && w.market && w.symbol && `${w.market}:${w.symbol}` === key
+      )
+      if (row) {
+        this.market = String(row.market)
+        this.symbol = String(row.symbol)
+        this.qtSymbol = this.symbol
+      }
     },
 
     autoSelectFirstIndicator () {
       if (this.indicators.length > 0 && !this.selectedIndicatorId) {
         this.selectedIndicatorId = this.indicators[0].id
+        if (!this.chartVisibleIndicatorIds.length) {
+          this.chartVisibleIndicatorIds = [Number(this.indicators[0].id)]
+        }
         this.onIndicatorChange(this.indicators[0].id)
       }
     },
     ensureChartReady () {
+      this.reconcileIdeMarketFromWatchlist()
       this.$nextTick(() => {
         setTimeout(() => {
           const chart = this.$refs.klineChart
@@ -1694,7 +1832,7 @@ export default {
       this.cmInstance.refresh()
     },
     onIndicatorChange (id) {
-      const ind = this.indicators.find(i => i.id === id)
+      const ind = this.indicators.find(i => Number(i.id) === Number(id))
       if (ind) {
         this.currentCode = ind.code || ''
         this.codeDirty = false
@@ -1706,22 +1844,31 @@ export default {
       } else {
         this.currentCode = ''
         this.codeDirty = false
-        this.activeIndicators = this.activeIndicators.filter(item => item.id !== 'selected-python-indicator')
+        this.chartVisibleIndicatorIds = []
         if (this.cmInstance) {
           this.cmInstance.setValue('')
         }
+        this.syncSelectedIndicatorToChart()
       }
       this.$nextTick(() => this.applyCodeMirrorReadOnly())
     },
-    buildSelectedIndicatorForChart (codeOverride) {
-      const ind = this.selectedIndicatorObj
+    isIdePythonActiveItem (item) {
+      if (!item) return false
+      if (item.type === 'python') return true
+      if (item.id === 'selected-python-indicator') return true
+      if (String(item.id || '').startsWith('ide-py-')) return true
+      return false
+    },
+    buildIdePythonIndicatorForChart (ind, codeForChart) {
       if (!ind) return null
       const chart = this.$refs.klineChart
-      const code = typeof codeOverride === 'string' ? codeOverride : (this.currentCode || ind.code || '')
-      if (!code || !chart || typeof chart.executePythonStrategy !== 'function') return null
+      const code = codeForChart != null ? codeForChart : (ind.code || '')
+      if (!code || !String(code).trim() || !chart || typeof chart.executePythonStrategy !== 'function') return null
+      const chartId = `ide-py-${ind.id}`
       return {
         ...ind,
-        id: 'selected-python-indicator',
+        id: chartId,
+        instanceId: chartId,
         originalId: ind.id,
         type: 'python',
         code,
@@ -1737,14 +1884,24 @@ export default {
       }
     },
     syncSelectedIndicatorToChart (codeOverride) {
-      const nonSelectedIndicators = this.activeIndicators.filter(item => item.id !== 'selected-python-indicator')
-      const selectedIndicator =
-        this.chartIndicatorRunning && this.selectedIndicatorObj
-          ? this.buildSelectedIndicatorForChart(codeOverride)
-          : null
-      this.activeIndicators = selectedIndicator
-        ? [...nonSelectedIndicators, selectedIndicator]
-        : nonSelectedIndicators
+      const nonPython = this.activeIndicators.filter(item => !this.isIdePythonActiveItem(item))
+      const pythonBlocks = []
+      if (this.chartIndicatorRunning) {
+        const seen = new Set()
+        for (const rawId of this.chartVisibleIndicatorIds || []) {
+          const id = Number(rawId)
+          if (isNaN(id) || seen.has(id)) continue
+          seen.add(id)
+          const ind = this.indicators.find(i => Number(i.id) === id)
+          if (!ind) continue
+          const code = Number(this.selectedIndicatorId) === id
+            ? (typeof codeOverride === 'string' ? codeOverride : (this.currentCode || ind.code || ''))
+            : (ind.code || '')
+          const built = this.buildIdePythonIndicatorForChart(ind, code)
+          if (built) pythonBlocks.push(built)
+        }
+      }
+      this.activeIndicators = [...nonPython, ...pythonBlocks]
       this.$nextTick(() => {
         const chart = this.$refs.klineChart
         if (chart && typeof chart.updateIndicators === 'function') {
@@ -1754,12 +1911,133 @@ export default {
     },
     toggleChartIndicatorRun () {
       if (!this.chartIndicatorRunning && this.chartIndicatorToggleDisabled) return
+      if (!this.chartIndicatorRunning && !this.chartVisibleIndicatorIds.length && this.selectedIndicatorId != null) {
+        this.chartVisibleIndicatorIds = [Number(this.selectedIndicatorId)]
+      }
       this.chartIndicatorRunning = !this.chartIndicatorRunning
       this.syncSelectedIndicatorToChart()
     },
+    onIndicatorDropdownVisibleChange (visible) {
+      this.indicatorDropdownVisible = visible
+    },
+    isIndicatorChartVisible (rawId) {
+      const id = Number(rawId)
+      return (this.chartVisibleIndicatorIds || []).some(x => Number(x) === id)
+    },
+    onChartIndicatorCheckChange (rawId, checked) {
+      const id = Number(rawId)
+      if (isNaN(id)) return
+      if (checked) {
+        if (!this.chartVisibleIndicatorIds.includes(id)) {
+          this.chartVisibleIndicatorIds = [...this.chartVisibleIndicatorIds, id]
+        }
+      } else {
+        this.chartVisibleIndicatorIds = this.chartVisibleIndicatorIds.filter(x => Number(x) !== id)
+      }
+      this.syncSelectedIndicatorToChart()
+    },
+    selectEditorIndicator (rawId) {
+      this.indicatorDropdownVisible = false
+      this.selectedIndicatorId = rawId
+      const id = Number(rawId)
+      // 点击名称：切换编辑器并默认仅将该指标绘制到 K 线；多指标需再勾选其他行前复选框追加
+      if (!isNaN(id)) {
+        this.chartVisibleIndicatorIds = [id]
+      }
+      this.onIndicatorChange(rawId)
+    },
+    /** 当前处于本页「图表 / 编辑器」全屏时的挂载根节点；Modal / message 与部分浮层共用 */
+    resolveIdeFullscreenMountNode () {
+      const fs = document.fullscreenElement || document.webkitFullscreenElement
+      const ch = this.$refs.chartFullscreenEl
+      const ed = this.$refs.editorFullscreenEl
+      if (ch && fs === ch) return ch
+      if (ed && fs === ed) return ed
+      return null
+    },
+    ideModalGetContainer () {
+      return this.resolveIdeFullscreenMountNode() || document.body
+    },
+    /** 全屏切换后 message 等仍指向 body 会不可见；须 destroy 后才会用新 getContainer 重建实例 */
+    applyIdeOverlayContainers () {
+      const mount = this.resolveIdeFullscreenMountNode()
+      const target = mount || document.body
+      try {
+        message.destroy()
+        message.config({ getContainer: () => target })
+      } catch (_) {}
+    },
+    /** 浏览器全屏时浮层必须挂在全屏子树内；优先以 document.fullscreenElement 为准，避免与 chartFullscreen 短暂不同步 */
+    chartToolbarGetPopupContainer () {
+      const fs = document.fullscreenElement || document.webkitFullscreenElement
+      const ch = this.$refs.chartFullscreenEl
+      if (ch && fs === ch) return ch
+      if (this.chartFullscreen && ch) return ch
+      return document.body
+    },
+    async toggleEditorFullscreen () {
+      const el = this.$refs.editorFullscreenEl
+      if (!el) return
+      try {
+        const fsEl = document.fullscreenElement || document.webkitFullscreenElement
+        if (fsEl === el) {
+          if (document.exitFullscreen) await document.exitFullscreen()
+          else if (document.webkitExitFullscreen) await document.webkitExitFullscreen()
+        } else if (el.requestFullscreen) await el.requestFullscreen()
+        else if (el.webkitRequestFullscreen) await el.webkitRequestFullscreen()
+      } catch (e) {
+        console.warn('fullscreen', e)
+      }
+      this.$nextTick(() => this.onGlobalFullscreenChange())
+    },
+    async toggleChartFullscreen () {
+      const el = this.$refs.chartFullscreenEl
+      if (!el) return
+      try {
+        const fsEl = document.fullscreenElement || document.webkitFullscreenElement
+        if (fsEl === el) {
+          if (document.exitFullscreen) await document.exitFullscreen()
+          else if (document.webkitExitFullscreen) await document.webkitExitFullscreen()
+        } else if (el.requestFullscreen) await el.requestFullscreen()
+        else if (el.webkitRequestFullscreen) await el.webkitRequestFullscreen()
+      } catch (e) {
+        console.warn('fullscreen', e)
+      }
+      this.$nextTick(() => this.onGlobalFullscreenChange())
+    },
+    onGlobalFullscreenChange () {
+      const fs = document.fullscreenElement || document.webkitFullscreenElement
+      const ed = this.$refs.editorFullscreenEl
+      const ch = this.$refs.chartFullscreenEl
+      this.editorFullscreen = !!(ed && fs === ed)
+      this.chartFullscreen = !!(ch && fs === ch)
+      this.applyIdeOverlayContainers()
+      this.$nextTick(() => {
+        if (this.cmInstance) this.cmInstance.refresh()
+        const chart = this.$refs.klineChart
+        const inst = chart && chart.chartRef
+        if (inst && typeof inst.resize === 'function') {
+          try { inst.resize() } catch (_) {}
+        }
+      })
+    },
     handleIndicatorToggle ({ action, indicator }) {
-      if (!indicator || !indicator.id) return
+      if (!indicator || (!indicator.id && !indicator.instanceId)) return
       const targetInstanceId = indicator.instanceId || indicator.id
+      const parseIdeDbId = (s) => {
+        const m = String(s || '').match(/^ide-py-(\d+)$/)
+        return m ? Number(m[1]) : null
+      }
+      if (action === 'remove') {
+        const dbId = parseIdeDbId(indicator.id) || parseIdeDbId(targetInstanceId)
+        if (dbId != null && !isNaN(dbId)) {
+          this.chartVisibleIndicatorIds = this.chartVisibleIndicatorIds.filter(x => Number(x) !== dbId)
+        } else if (String(indicator.id) === 'selected-python-indicator' || String(targetInstanceId) === 'selected-python-indicator') {
+          if (this.selectedIndicatorId != null) {
+            this.chartVisibleIndicatorIds = this.chartVisibleIndicatorIds.filter(x => Number(x) !== Number(this.selectedIndicatorId))
+          }
+        }
+      }
       if (action === 'add') {
         this.activeIndicators = [...this.activeIndicators, { ...indicator, instanceId: targetInstanceId, calculate: null }]
       } else if (action === 'update') {
@@ -1817,6 +2095,10 @@ export default {
             targetId = this.indicators.reduce((maxId, item) => Math.max(maxId, Number(item.id) || 0), 0)
           }
           if (targetId) {
+            const tid = Number(targetId)
+            if (!this.chartVisibleIndicatorIds.includes(tid)) {
+              this.chartVisibleIndicatorIds = [...this.chartVisibleIndicatorIds, tid]
+            }
             this.selectedIndicatorId = targetId
             this.onIndicatorChange(targetId)
             this.codeDirty = false
@@ -1913,6 +2195,7 @@ export default {
         okText: this.$t('dashboard.indicator.delete.confirmOk'),
         cancelText: this.$t('dashboard.indicator.delete.confirmCancel'),
         okType: 'danger',
+        getContainer: () => this.resolveIdeFullscreenMountNode() || document.body,
         onOk: () => this.confirmDeleteIndicator()
       })
     },
@@ -1929,13 +2212,18 @@ export default {
         })
         if (res && res.code === 1) {
           this.$message.success(this.$t('dashboard.indicator.delete.success'))
+          this.chartVisibleIndicatorIds = this.chartVisibleIndicatorIds.filter(x => Number(x) !== Number(id))
           await this.loadIndicators()
           if (this.indicators.length > 0) {
             const first = this.indicators[0]
             this.selectedIndicatorId = first.id
+            if (!this.chartVisibleIndicatorIds.length) {
+              this.chartVisibleIndicatorIds = [Number(first.id)]
+            }
             this.onIndicatorChange(first.id)
           } else {
             this.selectedIndicatorId = undefined
+            this.chartVisibleIndicatorIds = []
             this.onIndicatorChange(undefined)
           }
         } else {
@@ -2060,6 +2348,7 @@ export default {
     },
     buildExperimentBase () {
       if (!this.currentCode) return null
+      this.reconcileIdeMarketFromWatchlist()
       const pct = v => Number(v || 0) / 100
       return {
         indicatorCode: this.currentCode,
@@ -2804,8 +3093,10 @@ export default {
     // ===== Backtest =====
     async runBacktest () {
       if (!this.canRunBacktest) return
+      this.reconcileIdeMarketFromWatchlist()
       this.running = true
       this.hasResult = false
+      this.ideWorkspaceTab = 'backtest'
       this.resultTab = 'backtest'
       this.elapsedSec = 0
       clearInterval(this.elapsedTimer)
@@ -3240,26 +3531,6 @@ export default {
     goToIndicatorMarket () {
       this.$router.push('/indicator-community')
     },
-    startResizePanel (e) {
-      e.preventDefault()
-      this.resizeDragStartY = e.clientY
-      this.resizeDragStartH = this.chartPanelHeight
-      const onMove = (ev) => {
-        const delta = ev.clientY - this.resizeDragStartY
-        const next = this.resizeDragStartH + delta
-        this.chartPanelHeight = Math.max(160, Math.min(next, window.innerHeight - 220))
-      }
-      const onUp = () => {
-        document.removeEventListener('mousemove', onMove)
-        document.removeEventListener('mouseup', onUp)
-        document.body.style.cursor = ''
-        document.body.style.userSelect = ''
-      }
-      document.body.style.cursor = 'row-resize'
-      document.body.style.userSelect = 'none'
-      document.addEventListener('mousemove', onMove)
-      document.addEventListener('mouseup', onUp)
-    },
     buildNewIndicatorStarterCode () {
       const label = moment().format('YYYY-MM-DD HH:mm')
       return (
@@ -3287,6 +3558,7 @@ export default {
           content: this.$t('indicatorIde.newIndicatorUnsavedContent'),
           okText: this.$t('indicatorIde.newIndicatorConfirmOk'),
           cancelText: this.$t('indicatorIde.newIndicatorConfirmCancel'),
+          getContainer: () => this.resolveIdeFullscreenMountNode() || document.body,
           onOk: proceed
         })
       } else {
@@ -3314,6 +3586,10 @@ export default {
             targetId = this.indicators.reduce((maxId, item) => Math.max(maxId, Number(item.id) || 0), 0)
           }
           if (targetId) {
+            const tid = Number(targetId)
+            if (!this.chartVisibleIndicatorIds.includes(tid)) {
+              this.chartVisibleIndicatorIds = [...this.chartVisibleIndicatorIds, tid]
+            }
             this.selectedIndicatorId = targetId
             this.currentCode = code
             this.codeDirty = false
@@ -3492,9 +3768,20 @@ export default {
         return
       }
       if (val) {
-        const [m, s] = val.split(':')
-        this.market = m
-        this.symbol = s
+        const row = (this.watchlist || []).find(
+          w => w && w.market && w.symbol && `${w.market}:${w.symbol}` === val
+        )
+        if (row) {
+          this.market = String(row.market)
+          this.symbol = String(row.symbol)
+        } else {
+          const i = val.indexOf(':')
+          if (i > 0) {
+            this.market = val.slice(0, i)
+            this.symbol = val.slice(i + 1)
+          }
+        }
+        this.qtSymbol = this.symbol
       } else {
         this.market = ''
         this.symbol = ''
@@ -3596,6 +3883,9 @@ export default {
       if (runIndId && Number(this.selectedIndicatorId) !== runIndId) {
         const exists = this.indicators.some(i => Number(i.id) === runIndId)
         if (exists) {
+          if (!this.chartVisibleIndicatorIds.some(x => Number(x) === runIndId)) {
+            this.chartVisibleIndicatorIds = [...this.chartVisibleIndicatorIds, runIndId]
+          }
           this.selectedIndicatorId = runIndId
           this.onIndicatorChange(runIndId)
           this.$message.info(this.$t('indicatorIde.historyRunSwitchedIndicator', { id: runIndId }))
@@ -3729,6 +4019,12 @@ export default {
     selectedIndicatorId () {
       this.schedulePersistIdeUiState()
     },
+    chartVisibleIndicatorIds: {
+      deep: true,
+      handler () {
+        this.schedulePersistIdeUiState()
+      }
+    },
     selectedWatchlistKey () {
       this.schedulePersistIdeUiState()
     },
@@ -3798,63 +4094,49 @@ export default {
 .indicator-ide {
   display: flex;
   flex-direction: column;
+  /* 勿用 height:100% 依赖父级链：pro-layout 下父节点常无明确高度，会导致整页高度为 0 空白 */
   min-height: calc(100vh - 64px);
   height: auto;
+  width: 100%;
   padding: 0;
   background: #fff;
+  box-sizing: border-box;
 }
 
-// ===== Toolbar =====
-.ide-toolbar {
+// ===== Chart toolbar（原顶部按钮已迁入图表面板）=====
+.chart-panel-toolbar-top-actions {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 14px 10px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-  background: linear-gradient(180deg, #ffffff 0%, #f6f8fb 100%);
-  flex-shrink: 0;
-  gap: 10px;
-  box-shadow: 0 1px 0 rgba(24, 144, 255, 0.04);
-  .toolbar-left {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
-    min-width: 0;
-  }
-  .toolbar-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
-}
-.ide-toolbar-qt-btn {
-  border-radius: 10px !important;
-  font-weight: 600;
-  display: inline-flex !important;
   align-items: center;
   gap: 6px;
-  height: 34px !important;
-  padding: 0 12px !important;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
-}
-.ide-toolbar-qt-label {
-  font-size: 13px;
-  letter-spacing: 0.02em;
-}
-/* 与右侧带标签的工具组垂直居中对齐（避免单独贴在行底） */
-.ide-toolbar-code-slot {
-  display: flex;
-  align-items: center;
   flex-shrink: 0;
-  align-self: center;
 }
-.ide-toolbar-icon-btn {
-  flex-shrink: 0;
+.chart-panel-icon-btn {
   border-radius: 8px !important;
-  width: 32px;
-  height: 32px !important;
+  width: 28px;
+  height: 28px !important;
   padding: 0 !important;
   display: inline-flex !important;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+.chart-panel-qt-btn {
+  border-radius: 8px !important;
+  font-weight: 600;
+  display: inline-flex !important;
+  align-items: center;
+  gap: 4px;
+  height: 28px !important;
+  padding: 0 10px !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+.chart-panel-qt-label {
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  max-width: 88px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .ide-toolbar-group {
   display: flex;
@@ -3896,8 +4178,26 @@ export default {
   max-width: 36vw;
 }
 .ide-toolbar-select--indicator {
-  width: 200px;
-  max-width: 32vw;
+  width: 220px;
+  max-width: 42vw;
+}
+.ide-indicator-multiselect-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 8px;
+  .ide-indicator-trigger-text {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-right: 6px;
+    font-size: 12px;
+    text-align: left;
+  }
 }
 .ide-toolbar-group--indicator {
   flex-wrap: wrap;
@@ -3941,16 +4241,60 @@ export default {
 }
 
 // ===== Main =====
-.ide-main { display: flex; flex: 1 1 auto; overflow: visible; min-height: 0; align-items: flex-start; }
+.ide-main { display: flex; flex: 1 1 auto; overflow: visible; min-height: 0; align-items: stretch; }
+
+/* 代码栏收起：左侧竖条标签，点击展开（抽拉入口） */
+.ide-code-rail {
+  flex: 0 0 32px;
+  width: 32px;
+  min-width: 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 14px 0;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+  border-right: 1px solid #e2e8f0;
+  background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+  color: #475569;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+  box-shadow: 2px 0 8px rgba(15, 23, 42, 0.04);
+  &:hover {
+    background: linear-gradient(180deg, #e8f4ff 0%, #dbeafe 100%);
+    color: @primary-color;
+    box-shadow: 2px 0 12px rgba(24, 144, 255, 0.12);
+  }
+  &:focus {
+    outline: none;
+    box-shadow: inset 0 0 0 2px rgba(24, 144, 255, 0.35);
+  }
+}
+.ide-code-rail__icon {
+  font-size: 16px;
+  color: @primary-color;
+}
+.ide-code-rail__label {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  line-height: 1.2;
+  max-height: 120px;
+  overflow: hidden;
+}
 
 .ide-left {
   width: 30%;
   min-width: 280px;
   max-width: 400px;
-  height: calc(100vh - 64px - 56px);
-  max-height: calc(100vh - 64px - 56px);
+  height: calc(100vh - 64px - 8px);
+  max-height: calc(100vh - 64px - 8px);
   display: flex;
   flex-direction: column;
+  min-height: 0;
   border-right: 1px solid #eee;
   overflow: hidden;
   flex-shrink: 0;
@@ -3958,11 +4302,43 @@ export default {
   position: sticky;
   top: 0;
   align-self: flex-start;
+  &.ide-panel--fullscreen {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    position: relative;
+    top: auto;
+    align-self: stretch;
+    border-right: none;
+  }
 }
 
+.ide-code-drawer-handle {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 7px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  background: linear-gradient(180deg, #f1f5f9 0%, #e8eef5 100%);
+  border-top: 1px solid #e2e8f0;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s, color 0.15s;
+  &:hover {
+    background: linear-gradient(180deg, #e6f0fa 0%, #dce8f4 100%);
+    color: @primary-color;
+  }
+}
 // ===== Code Panel =====
 .code-panel {
   flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -4020,7 +4396,8 @@ export default {
 .panel-title {
   display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: space-between;
+  gap: 10px;
   padding: 7px 10px;
   font-size: 12px;
   font-weight: 600;
@@ -4031,11 +4408,30 @@ export default {
   transition: background 0.15s;
   &:hover { background: #f5f7fa; }
 }
+.panel-title__leading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+}
+.panel-title__trailing {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.panel-title-chevron {
+  font-size: 11px;
+  color: #94a3b8;
+  flex-shrink: 0;
+}
 .panel-title-actions {
   display: flex;
   align-items: center;
   gap: 4px;
-  margin-left: auto;
+  flex-shrink: 0;
   /deep/ .ant-btn-sm {
     width: 26px;
     height: 26px;
@@ -4389,7 +4785,160 @@ export default {
 }
 
 // ===== Right Panel =====
-.ide-right { flex: 1; display: flex; flex-direction: column; overflow: visible; min-width: 0; }
+.ide-right {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+.ide-right--workspace {
+  min-height: 0;
+  overflow: hidden;
+  /* 勿 align-self:flex-start：在 ide-main 行 flex 里会按「子内容高度」收缩，回测 Tab 内 flex 链易塌成 0 */
+  align-self: stretch;
+  flex: 1 1 0;
+  height: calc(100vh - 64px - 8px);
+  max-height: calc(100vh - 64px - 8px);
+}
+/* 根节点同时带 .ide-workspace-tabs 与 .ant-tabs，勿用 /deep/ .ant-tabs 仅匹配子级 */
+.ide-workspace-tabs {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  /* vc-tabs 在 bar 与内容区之间插入了 Sentinel，.ant-tabs-content 不是根的直接子元素，不能用 `> .ant-tabs-content`。 */
+  /* 外层工作区为 type="card"，内容根节点带 .ant-tabs-card-content；内层 result-tabs 为 line，无此类名，不会误伤。 */
+  & > {
+    /deep/ .ant-tabs-bar {
+      flex-shrink: 0;
+      margin-bottom: 0;
+    }
+  }
+  /deep/ .ant-tabs-card-content {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    > .ant-tabs-tabpane-active {
+      flex: 1 1 0;
+      min-height: 0;
+      overflow: hidden;
+      display: flex !important;
+      flex-direction: column;
+      .ide-workspace-pane--chart {
+        flex: 1 1 0;
+        min-height: 0;
+        overflow: hidden;
+      }
+    }
+  }
+}
+/* 回测 Tab：参与 flex 高度链，由本层 overflow-y:auto 产生滚动条 */
+.ide-backtest-scroll-mount {
+  flex: 1 1 0;
+  min-height: 120px;
+  min-width: 0;
+  align-self: stretch;
+  width: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+/* 仅最外层「回测」工作区 tabpane（勿命中 result-tabs 内层 tabpane） */
+.ide-workspace-tabs /deep/ .ant-tabs-card-content > .ant-tabs-tabpane-active:has(.ide-backtest-scroll-mount) {
+  flex: 1 1 0 !important;
+  min-height: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+.ide-workspace-pane--chart {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.ide-workspace-pane--backtest {
+  flex: 0 0 auto;
+  min-height: 0;
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+}
+.ide-backtest-scroll-mount .result-panel {
+  flex: 0 0 auto;
+  min-height: 0;
+  overflow: visible;
+  padding-bottom: 16px;
+}
+
+/* 右侧「图表 / 回测」工作区 Tab：浅色卡片条（bar 为根下第一子；内容区用 card-content，避免 Sentinel 导致选不中） */
+.ide-workspace-tabs.ide-workspace-tabs--pill {
+  padding: 0 10px 0;
+  & > {
+    /deep/ .ant-tabs-bar {
+      border-bottom: 1px solid #e8e8e8;
+      margin: 0 0 0;
+      padding: 8px 0 0;
+      background: linear-gradient(180deg, #fafbfc 0%, #f4f6f9 100%);
+      /deep/ .ant-tabs-nav-container {
+        height: auto !important;
+      }
+      /deep/ .ant-tabs-nav-wrap {
+        margin-bottom: 0;
+      }
+      /deep/ .ant-tabs-tab {
+        margin: 0 4px 0 0 !important;
+        padding: 7px 18px !important;
+        height: auto !important;
+        line-height: 1.35 !important;
+        font-size: 12px;
+        font-weight: 600;
+        border-radius: 10px 10px 0 0 !important;
+        border: 1px solid #e2e8f0 !important;
+        border-bottom: none !important;
+        background: #fff !important;
+        color: #64748b !important;
+        transition: color 0.15s, background 0.15s, box-shadow 0.15s;
+        &:hover {
+          color: @primary-color !important;
+          background: #f8fafc !important;
+        }
+      }
+      /deep/ .ant-tabs-tab-active {
+        color: @primary-color !important;
+        background: linear-gradient(180deg, #ffffff 0%, #f0f7ff 100%) !important;
+        border-color: #bae0ff !important;
+        box-shadow: 0 -2px 10px rgba(24, 144, 255, 0.12);
+        position: relative;
+        z-index: 1;
+      }
+      /deep/ .ant-tabs-nav .ant-tabs-tab {
+        &:last-child {
+          margin-right: 0 !important;
+        }
+      }
+      /deep/ .ant-tabs-ink-bar {
+        display: none !important;
+      }
+    }
+  }
+  /deep/ .ant-tabs-card-content {
+    border-radius: 0 0 10px 10px;
+    background: #fff;
+    border: 1px solid #e8e8e8;
+    border-top: none;
+    margin-top: -1px;
+  }
+}
 
 /* 闪电交易：主布局内右侧栏，与 .ide-left 同为抽拉分栏（无全屏遮罩） */
 .ide-quick-right {
@@ -4440,7 +4989,8 @@ export default {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   padding: 0 0 8px;
   /deep/ .quick-trade-panel-root {
     flex: 1;
@@ -4476,31 +5026,146 @@ export default {
   }
 }
 
-.ide-resize-handle {
-  flex: 0 0 7px;
+.ide-chart-fs-root {
+  flex: 1 1 auto;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: row-resize;
-  background: #f0f0f0;
-  border-top: 1px solid #e8e8e8;
-  border-bottom: 1px solid #e8e8e8;
-  transition: background 0.15s;
-  &:hover { background: #e2e2e2; }
-  &:active { background: #d4d4d4; }
-}
-.ide-resize-handle-dots {
-  display: block;
-  width: 32px;
-  height: 3px;
-  border-radius: 2px;
-  background: #c0c0c0;
-}
-
-.chart-panel {
-  flex: none;
-  min-height: 160px;
+  flex-direction: column;
+  min-height: 0;
   overflow: hidden;
+  background: #fff;
+  align-self: stretch;
+  /* 高于下方回测区，避免同列层叠时盖住闪电交易侧栏内的浮层（与 body 下拉高 z-index 配合） */
+  position: relative;
+  z-index: 3;
+  &.ide-panel--fullscreen {
+    height: 100vh !important;
+    max-height: 100vh !important;
+    overflow: visible !important;
+    z-index: 5;
+    .ide-chart-fs-row {
+      flex: 1;
+      min-height: 0;
+      overflow: visible;
+    }
+    .chart-panel {
+      overflow: visible;
+    }
+    .chart-panel-inner {
+      overflow: hidden;
+      flex: 1;
+      min-height: 0;
+    }
+  }
+}
+.ide-chart-fs-row {
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  align-items: stretch;
+}
+.ide-quick-right--chart-fs {
+  flex: 0 0 auto;
+  width: 30%;
+  min-width: 260px;
+  max-width: 400px;
+  align-self: stretch;
+  border-left: 1px solid #e8e8e8;
+  overflow: visible;
+  position: relative;
+  z-index: 2;
+}
+.chart-panel {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  .chart-panel-toolbar {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 8px 10px 10px;
+    border-bottom: 1px solid #f0f0f0;
+    background: #fafafa;
+  }
+  .chart-panel-toolbar-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 28px;
+  }
+  .chart-panel-toolbar-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 10px;
+    min-width: 0;
+    .ide-toolbar-group {
+      flex: 0 1 auto;
+      min-width: 0;
+    }
+    .ide-toolbar-group--tf {
+      flex: 1 1 280px;
+      min-width: 200px;
+    }
+    .ide-toolbar-group--indicator {
+      flex: 1 1 200px;
+      min-width: 160px;
+      align-items: flex-start;
+      .ide-toolbar-label {
+        width: 100%;
+        text-align: left;
+        align-self: flex-start;
+      }
+      .ide-indicator-multiselect-trigger {
+        width: 100%;
+        max-width: 208px;
+      }
+    }
+  }
+  .chart-panel-watchlist-select {
+    width: 100%;
+    min-width: 260px;
+    max-width: 380px;
+  }
+  .ide-tf-seg--chart {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    max-width: 100%;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 2px;
+    /deep/ .ant-radio-button-wrapper {
+      flex-shrink: 0;
+    }
+  }
+  .chart-panel-toolbar-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: #595959;
+  }
+  .chart-panel-fs-btn {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .chart-panel-inner {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
   /deep/ .chart-left,
   /deep/ .chart-wrapper,
   /deep/ .chart-content-area,
@@ -4516,11 +5181,14 @@ export default {
 }
 
 .result-panel {
-  flex: 1;
+  flex: 1 1 0;
   display: flex;
   flex-direction: column;
+  min-height: 0;
   overflow: visible;
-  padding: 0 14px 0;
+  padding: 0 18px 0;
+  position: relative;
+  z-index: 1;
 }
 .params-card {
   flex-shrink: 0;
@@ -4582,10 +5250,17 @@ export default {
 }
 .result-tabs {
   flex: 0 0 auto;
-  min-height: auto;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   overflow: visible;
+  /deep/ .ant-tabs {
+    display: flex;
+    flex-direction: column;
+    flex: 0 0 auto;
+    min-height: 0;
+    overflow: visible;
+  }
   /deep/ .ant-tabs-bar {
     margin-bottom: 0;
     flex-shrink: 0;
@@ -4593,12 +5268,14 @@ export default {
     z-index: 2;
   }
   /deep/ .ant-tabs-tab { font-size: 13px; }
-  /* animated=false 时内容区无 margin/transform，可与 flex+滚动安全共用 */
+  /* 外层 ide-backtest-scroll-mount 负责纵向滚动；内层按内容高度即可，勿 flex:1 撑在 auto 父级上（易变成 0 高） */
   /deep/ .ant-tabs-content {
     flex: 0 0 auto;
     min-height: auto;
     overflow: visible;
-    padding: 10px 0 14px;
+    display: flex;
+    flex-direction: column;
+    padding: 14px 20px 22px;
   }
 }
 
@@ -4672,7 +5349,7 @@ export default {
 .equity-chart { width: 100%; height: 200px; border-radius: 8px; }
 
 .ide-tuning-launch {
-  padding: 14px;
+  padding: 16px 20px 22px;
 }
 .ide-tuning-launch-header {
   display: flex;
@@ -5291,10 +5968,65 @@ export default {
 // ===== Dark Theme =====
 &.theme-dark {
   background: #141414;
-  .ide-toolbar {
-    background: linear-gradient(180deg, #1f1f1f 0%, #1a1a1a 100%);
-    border-bottom-color: #303030;
-    box-shadow: 0 1px 0 rgba(24, 144, 255, 0.06);
+  .ide-code-drawer-handle {
+    color: rgba(255, 255, 255, 0.55);
+    background: linear-gradient(180deg, #252525 0%, #1c1c1c 100%);
+    border-top-color: #363636;
+    &:hover {
+      color: #58a6ff;
+      background: linear-gradient(180deg, #2a2a2a 0%, #222 100%);
+    }
+  }
+  .ide-code-rail {
+    border-right-color: #303030;
+    background: linear-gradient(180deg, #1f1f1f 0%, #181818 100%);
+    color: rgba(255, 255, 255, 0.5);
+    box-shadow: 2px 0 14px rgba(0, 0, 0, 0.5);
+    &:hover {
+      background: linear-gradient(180deg, rgba(23, 125, 220, 0.14) 0%, rgba(23, 125, 220, 0.06) 100%);
+      color: #58a6ff;
+    }
+    &:focus {
+      box-shadow: inset 0 0 0 2px rgba(88, 166, 255, 0.45);
+    }
+  }
+  .ide-code-rail__icon {
+    color: #58a6ff;
+  }
+  .ide-workspace-tabs.ide-workspace-tabs--pill {
+    /deep/ .ant-tabs-bar {
+      border-bottom-color: #303030;
+      background: linear-gradient(180deg, #1a1a1a 0%, #141414 100%);
+    }
+    /deep/ .ant-tabs-tab {
+      border-color: #363636 !important;
+      border-bottom: none !important;
+      background: #1f1f1f !important;
+      color: rgba(255, 255, 255, 0.45) !important;
+      &:hover {
+        color: #58a6ff !important;
+        background: #262626 !important;
+      }
+    }
+    /deep/ .ant-tabs-tab-active {
+      color: #58a6ff !important;
+      background: linear-gradient(180deg, #252525 0%, rgba(23, 125, 220, 0.12) 100%) !important;
+      border-color: #177ddc !important;
+      box-shadow: 0 -2px 14px rgba(23, 125, 220, 0.22);
+    }
+    /deep/ .ant-tabs-card-content {
+      background: #141414;
+      border-color: #303030;
+      border-top: none;
+    }
+  }
+  .panel-title-chevron {
+    color: rgba(255, 255, 255, 0.38);
+  }
+  .chart-panel-icon-btn {
+    background: #262626;
+    border-color: #434343;
+    box-shadow: none;
   }
   .ide-toolbar-group {
     background: rgba(255, 255, 255, 0.04);
@@ -5302,18 +6034,36 @@ export default {
     box-shadow: none;
   }
   .ide-toolbar-label { color: rgba(255, 255, 255, 0.45); }
-  .ide-toolbar-icon-btn {
-    background: #262626;
-    border-color: #434343;
-    box-shadow: none;
-  }
   .tf-group /deep/ .ant-radio-button-wrapper {
     background: #262626;
     border-color: #434343;
     color: rgba(255, 255, 255, 0.65);
   }
   .ide-left { background: #181818; border-right-color: #303030; }
-  .ide-toolbar-qt-btn.ant-btn-default {
+  .ide-chart-fs-root {
+    background: #141414;
+    border-bottom-color: #303030;
+  }
+  .ide-quick-right--chart-fs {
+    border-left-color: #303030;
+  }
+  .chart-panel {
+    background: #141414;
+    border-bottom-color: #303030;
+    .chart-panel-toolbar {
+      background: #1a1a1a;
+      border-bottom-color: #303030;
+    }
+    .chart-panel-toolbar-title { color: rgba(255, 255, 255, 0.65); }
+    .chart-panel-toolbar-controls .ide-toolbar-group {
+      background: rgba(255, 255, 255, 0.04);
+      border-color: #363636;
+    }
+    .chart-panel-toolbar-controls .ide-toolbar-label {
+      color: rgba(255, 255, 255, 0.45);
+    }
+  }
+  .chart-panel-qt-btn.ant-btn-default {
     background: #262626;
     border-color: #434343;
     color: rgba(255, 255, 255, 0.85);
@@ -5389,15 +6139,6 @@ export default {
   .param-section { border-bottom-color: #303030; }
   .param-label { color: rgba(255,255,255,0.78); }
   .field-label { color: rgba(255,255,255,0.58); }
-  .chart-panel { border-bottom-color: #303030; }
-  .ide-resize-handle {
-    background: #1f1f1f;
-    border-top-color: #303030;
-    border-bottom-color: #303030;
-    &:hover { background: #2a2a2a; }
-    &:active { background: #333; }
-  }
-  .ide-resize-handle-dots { background: #555; }
   .result-tabs /deep/ .ant-tabs-bar { background: #141414; }
   .result-tabs /deep/ .ant-tabs-content {
     &::-webkit-scrollbar-thumb { background: #434343; }
@@ -5701,6 +6442,92 @@ export default {
     background: #f5f5f5;
   }
 }
+.ide-indicator-multiselect-dropdown {
+  /* 全屏子树内须高于 K 线 canvas / 内部层，否则下拉看似「点不开」 */
+  z-index: 10050 !important;
+  .ant-dropdown-menu {
+    padding: 0;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  }
+}
+.ide-indicator-overlay {
+  min-width: 260px;
+  max-width: 420px;
+  max-height: 320px;
+  overflow: auto;
+  padding: 8px 0;
+  background: #fff;
+}
+.ide-indicator-overlay-hint {
+  padding: 0 12px 8px;
+  font-size: 11px;
+  color: #8c8c8c;
+  line-height: 1.4;
+}
+.ide-indicator-overlay-empty {
+  padding: 12px;
+  font-size: 12px;
+  color: #8c8c8c;
+}
+.ide-indicator-overlay-list {
+  padding: 0 4px;
+}
+.ide-indicator-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  &:hover {
+    background: #f5f5f5;
+  }
+}
+.ide-indicator-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  cursor: pointer;
+  color: #262626;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  &.active {
+    color: #1890ff;
+    font-weight: 600;
+  }
+}
+.ide-indicator-purchased-tag {
+  margin-left: 0;
+  font-size: 10px;
+  line-height: 16px;
+  padding: 0 4px;
+  flex-shrink: 0;
+}
+.ide-indicator-multiselect-dropdown--dark {
+  .ant-dropdown-menu {
+    background: #1f1f1f;
+    border: 1px solid #363636;
+  }
+  .ide-indicator-overlay {
+    background: #1f1f1f;
+  }
+  .ide-indicator-overlay-hint,
+  .ide-indicator-overlay-empty {
+    color: rgba(255, 255, 255, 0.45);
+  }
+  .ide-indicator-row:hover {
+    background: rgba(255, 255, 255, 0.06);
+  }
+  .ide-indicator-name {
+    color: rgba(255, 255, 255, 0.85);
+    &.active {
+      color: #58a6ff;
+    }
+  }
+}
+
 .ide-watchlist-dropdown--dark {
   background: #1f1f1f;
   .ant-select-dropdown-menu-item {
@@ -5750,5 +6577,28 @@ export default {
   .publish-hint { color: rgba(255,255,255,0.45); }
   .editor-content { color: rgba(255,255,255,0.85); }
   .ant-row { color: rgba(255,255,255,0.85); }
+}
+</style>
+
+<!-- 闪电交易 Select / 添加交易所 Modal 挂到 body 时须高于回测卡片、侧栏等 -->
+<style lang="less">
+.ant-select-dropdown.ide-qt-select-dropdown {
+  z-index: 10060 !important;
+}
+.ant-modal-wrap.profile-exchange-modal {
+  z-index: 10070 !important;
+}
+.ant-select-dropdown.profile-exchange-select-dropdown,
+.ant-select-dropdown.profile-exchange-select-dropdown-dark {
+  z-index: 10080 !important;
+}
+
+/* 仅收掉内容区与 IDE 之间的留白；勿改 display/flex/min-height，否则会整页高度塌成 0 */
+@supports selector(:has(*)) {
+  .ant-layout-content:has(.indicator-ide),
+  .ant-pro-basicLayout-content:has(.indicator-ide) {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
 }
 </style>

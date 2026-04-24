@@ -26,6 +26,8 @@
             style="width: 100%"
             :filter-option="false"
             :not-found-content="symbolSearching ? null : undefined"
+            :get-popup-container="qtSelectPopupContainer"
+            :dropdown-class-name="qtSelectDropdownClass"
             @search="handleSymbolSearch"
             @change="handleSymbolChange"
             @focus="handleSymbolFocus"
@@ -59,6 +61,8 @@
               v-model="selectedCredentialId"
               :placeholder="$t('quickTrade.selectExchange')"
               style="width: 100%"
+              :get-popup-container="qtSelectPopupContainer"
+              :dropdown-class-name="qtSelectDropdownClass"
               @change="onCredentialChange"
               :loading="credLoading"
               :notFoundContent="$t('quickTrade.noExchange')"
@@ -377,6 +381,7 @@
     </component>
     <exchange-account-modal
       :visible.sync="showAddExchangeModal"
+      :overlay-mount="() => qtOverlayMount()"
       @success="onExchangeAccountSaved"
     />
   </div>
@@ -403,7 +408,9 @@ export default {
     marketType: { type: String, default: 'swap' }, // swap / spot
     embedded: { type: Boolean, default: false },
     /** 指标 IDE 右侧浮动面板：更紧凑的分区与卡片样式 */
-    embeddedIde: { type: Boolean, default: false }
+    embeddedIde: { type: Boolean, default: false },
+    /** 与图表工具栏共用：全屏时挂到全屏根，否则 body（IDE 内由父组件传入 chartToolbarGetPopupContainer） */
+    overlayGetContainer: { type: Function, default: null }
   },
   data () {
     return {
@@ -451,6 +458,9 @@ export default {
     }),
     isDark () {
       return this.navTheme === 'dark' || this.navTheme === 'realdark'
+    },
+    qtSelectDropdownClass () {
+      return this.embeddedIde ? 'ide-qt-select-dropdown' : ''
     },
     isSwapMode () {
       return this.tradeMode === 'swap'
@@ -568,6 +578,25 @@ export default {
     }
   },
   methods: {
+    qtSelectPopupContainer (triggerNode) {
+      if (typeof this.overlayGetContainer === 'function') {
+        return this.overlayGetContainer(triggerNode)
+      }
+      const fs = document.fullscreenElement || document.webkitFullscreenElement
+      const el = this.$el
+      if (el && fs && typeof fs.contains === 'function' && fs.contains(el)) return fs
+      return document.body
+    },
+    qtOverlayMount () {
+      if (typeof this.overlayGetContainer === 'function') {
+        const n = this.overlayGetContainer()
+        return n || document.body
+      }
+      const fs = document.fullscreenElement || document.webkitFullscreenElement
+      const el = this.$el
+      if (el && fs && typeof fs.contains === 'function' && fs.contains(el)) return fs
+      return document.body
+    },
     setTradeSide (s) {
       if (s === 'sell' && !this.isSwapMode) {
         this.$message.warning(this.$t('quickTrade.shortDisabledSpot'))
