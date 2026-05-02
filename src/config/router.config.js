@@ -136,6 +136,13 @@ export const asyncRouterMap = [
         component: () => import('@/views/user-manage'),
         meta: { title: 'menu.userManage', keepAlive: false, icon: 'team', permission: ['admin'] }
       },
+      // Agent Tokens (admin only) — issue/revoke tokens for AI agents and view audit log
+      {
+        path: '/agent-tokens',
+        name: 'AgentTokens',
+        component: () => import('@/views/agent-tokens'),
+        meta: { title: 'menu.agentTokens', keepAlive: false, icon: 'api', permission: ['admin'] }
+      },
       // 系统设置 (admin only) - 放在最后
       {
         path: '/settings',
