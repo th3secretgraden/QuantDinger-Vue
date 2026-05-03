@@ -1,5 +1,5 @@
 <template>
-  <div class="agent-tokens-page">
+  <div class="agent-tokens-page" :class="{ 'theme-dark': isDarkTheme }">
     <div class="page-header">
       <h2 class="page-title">
         <a-icon type="api" />
@@ -104,7 +104,7 @@
               style="width: 120px; margin-left: 12px"
               @change="loadAudit"
             />
-            <span style="margin-left: 8px; color: #999">
+            <span class="entries-label">
               {{ $t('agentTokens.entries') || 'entries' }}
             </span>
           </div>
@@ -141,6 +141,7 @@
       :visible="issueModalVisible"
       :title="$t('agentTokens.issueToken') || 'Issue Token'"
       :confirm-loading="issuing"
+      :wrapClassName="modalWrapClass"
       @ok="confirmIssue"
       @cancel="closeIssueModal"
       :width="640"
@@ -152,21 +153,21 @@
 
         <a-form-model-item :label="$t('agentTokens.scopes') || 'Scopes'" prop="scopes">
           <a-checkbox-group v-model="issueForm.scopes">
-            <a-tooltip :title="scopeHint('R')"><a-checkbox value="R">R · Read</a-checkbox></a-tooltip>
-            <a-tooltip :title="scopeHint('W')"><a-checkbox value="W">W · Workspace</a-checkbox></a-tooltip>
-            <a-tooltip :title="scopeHint('B')"><a-checkbox value="B">B · Backtest</a-checkbox></a-tooltip>
-            <a-tooltip :title="scopeHint('N')"><a-checkbox value="N">N · Notify</a-checkbox></a-tooltip>
-            <a-tooltip :title="scopeHint('T')"><a-checkbox value="T">T · Trade</a-checkbox></a-tooltip>
+            <a-tooltip :title="scopeHint('R')"><a-checkbox value="R">R · {{ $t('agentTokens.scopeLabel.R') || 'Read' }}</a-checkbox></a-tooltip>
+            <a-tooltip :title="scopeHint('W')"><a-checkbox value="W">W · {{ $t('agentTokens.scopeLabel.W') || 'Workspace' }}</a-checkbox></a-tooltip>
+            <a-tooltip :title="scopeHint('B')"><a-checkbox value="B">B · {{ $t('agentTokens.scopeLabel.B') || 'Backtest' }}</a-checkbox></a-tooltip>
+            <a-tooltip :title="scopeHint('N')"><a-checkbox value="N">N · {{ $t('agentTokens.scopeLabel.N') || 'Notify' }}</a-checkbox></a-tooltip>
+            <a-tooltip :title="scopeHint('T')"><a-checkbox value="T">T · {{ $t('agentTokens.scopeLabel.T') || 'Trade' }}</a-checkbox></a-tooltip>
           </a-checkbox-group>
         </a-form-model-item>
 
         <a-form-model-item :label="$t('agentTokens.markets') || 'Markets'">
-          <a-input v-model="issueForm.markets" placeholder="* or e.g. Crypto,USStock" />
+          <a-input v-model="issueForm.markets" :placeholder="$t('agentTokens.marketsPlaceholder') || '* or e.g. Crypto,USStock'" />
           <div class="hint">{{ $t('agentTokens.marketsHint') || 'Comma-separated allowlist; * means all allowed markets.' }}</div>
         </a-form-model-item>
 
         <a-form-model-item :label="$t('agentTokens.instruments') || 'Instruments'">
-          <a-input v-model="issueForm.instruments" placeholder="* or e.g. BTC/USDT,ETH/USDT" />
+          <a-input v-model="issueForm.instruments" :placeholder="$t('agentTokens.instrumentsPlaceholder') || '* or e.g. BTC/USDT,ETH/USDT'" />
           <div class="hint">{{ $t('agentTokens.instrumentsHint') || 'Useful when scope T is enabled.' }}</div>
         </a-form-model-item>
 
@@ -194,6 +195,7 @@
       :title="$t('agentTokens.revealTitle') || 'Token issued — copy it now'"
       :footer="null"
       :width="640"
+      :wrapClassName="modalWrapClass"
       @cancel="revealed = null"
     >
       <a-alert
@@ -202,10 +204,10 @@
         :message="$t('agentTokens.revealAlert') || 'This is the only time the full token will be shown. Store it in a secrets manager.'"
         style="margin-bottom: 16px"
       />
-      <div v-if="revealed">
+      <div v-if="revealed" class="reveal-body">
         <div class="reveal-row">
           <span class="reveal-label">{{ $t('agentTokens.name') || 'Name' }}:</span>
-          <span>{{ revealed.name }}</span>
+          <span class="reveal-value">{{ revealed.name }}</span>
         </div>
         <div class="reveal-row">
           <span class="reveal-label">{{ $t('agentTokens.scopes') || 'Scopes' }}:</span>
@@ -230,6 +232,7 @@
 </template>
 
 <script>
+import { mapState } from 'vuex'
 import {
   issueAgentToken,
   listAgentTokens,
@@ -254,38 +257,33 @@ export default {
       issuing: false,
       issueForm: this.freshIssueForm(),
       issueRules: {
-        name: [{ required: true, message: 'Name is required', trigger: 'blur' }],
-        scopes: [{ type: 'array', required: true, min: 1, message: 'Pick at least one scope', trigger: 'change' }]
+        name: [{
+          required: true,
+          message: this.$t('agentTokens.rule.nameRequired') || 'Name is required',
+          trigger: 'blur'
+        }],
+        scopes: [{
+          type: 'array',
+          required: true,
+          min: 1,
+          message: this.$t('agentTokens.rule.scopeRequired') || 'Pick at least one scope',
+          trigger: 'change'
+        }]
       },
 
-      revealed: null,
-
-      tokenColumns: [
-        { title: 'ID', dataIndex: 'id', width: 70 },
-        { title: this.$t('agentTokens.name') || 'Name', dataIndex: 'name', width: 180 },
-        { title: this.$t('agentTokens.prefix') || 'Prefix', dataIndex: 'token_prefix', width: 200 },
-        { title: this.$t('agentTokens.scopes') || 'Scopes', dataIndex: 'scopes', scopedSlots: { customRender: 'scopes' }, width: 180 },
-        { title: this.$t('agentTokens.markets') || 'Markets', dataIndex: 'markets', width: 160 },
-        { title: this.$t('agentTokens.paperOnly') || 'Paper-only', dataIndex: 'paper_only', scopedSlots: { customRender: 'paper' }, width: 130 },
-        { title: this.$t('agentTokens.rateLimit') || 'Rate/min', dataIndex: 'rate_limit_per_min', width: 100 },
-        { title: this.$t('agentTokens.status') || 'Status', dataIndex: 'status', scopedSlots: { customRender: 'status' }, width: 100 },
-        { title: this.$t('agentTokens.lastUsed') || 'Last used', dataIndex: 'last_used_at', scopedSlots: { customRender: 'ts' }, width: 170 },
-        { title: this.$t('agentTokens.expiresAt') || 'Expires', dataIndex: 'expires_at', scopedSlots: { customRender: 'ts' }, width: 170 },
-        { title: this.$t('common.actions') || 'Actions', scopedSlots: { customRender: 'actions' }, width: 100, fixed: 'right' }
-      ],
-      auditColumns: [
-        { title: 'ID', dataIndex: 'id', width: 70 },
-        { title: this.$t('agentTokens.agentName') || 'Agent', dataIndex: 'agent_name', width: 160 },
-        { title: 'Method', dataIndex: 'method', width: 80 },
-        { title: 'Route', dataIndex: 'route', width: 280, ellipsis: true },
-        { title: 'Class', dataIndex: 'scope_class', scopedSlots: { customRender: 'scope' }, width: 80 },
-        { title: 'Status', dataIndex: 'status_code', scopedSlots: { customRender: 'status' }, width: 90 },
-        { title: 'Duration', dataIndex: 'duration_ms', scopedSlots: { customRender: 'duration' }, width: 100 },
-        { title: 'When', dataIndex: 'created_at', scopedSlots: { customRender: 'ts' }, width: 170 }
-      ]
+      revealed: null
     }
   },
   computed: {
+    ...mapState({
+      navTheme: state => (state.app && state.app.theme) || ''
+    }),
+    isDarkTheme () {
+      return this.navTheme === 'dark' || this.navTheme === 'realdark'
+    },
+    modalWrapClass () {
+      return this.isDarkTheme ? 'agent-tokens-modal theme-dark' : 'agent-tokens-modal'
+    },
     paperHint () {
       const sel = this.issueForm.scopes || []
       if (!this.issueForm.paper_only && sel.includes('T')) {
@@ -293,6 +291,33 @@ export default {
           'Live trading also requires AGENT_LIVE_TRADING_ENABLED=true on the server. Until then T-class calls still record paper orders.'
       }
       return this.$t('agentTokens.paperOnHint') || 'Recommended. Trades are simulated and never touch exchange credentials.'
+    },
+    tokenColumns () {
+      return [
+        { title: this.$t('agentTokens.col.id') || 'ID', dataIndex: 'id', width: 70 },
+        { title: this.$t('agentTokens.name') || 'Name', dataIndex: 'name', width: 180 },
+        { title: this.$t('agentTokens.prefix') || 'Prefix', dataIndex: 'token_prefix', width: 200 },
+        { title: this.$t('agentTokens.scopes') || 'Scopes', dataIndex: 'scopes', scopedSlots: { customRender: 'scopes' }, width: 180 },
+        { title: this.$t('agentTokens.markets') || 'Markets', dataIndex: 'markets', width: 160 },
+        { title: this.$t('agentTokens.paperOnly') || 'Paper-only', dataIndex: 'paper_only', scopedSlots: { customRender: 'paper' }, width: 130 },
+        { title: this.$t('agentTokens.col.ratePerMin') || 'Rate/min', dataIndex: 'rate_limit_per_min', width: 100 },
+        { title: this.$t('agentTokens.status') || 'Status', dataIndex: 'status', scopedSlots: { customRender: 'status' }, width: 100 },
+        { title: this.$t('agentTokens.lastUsed') || 'Last used', dataIndex: 'last_used_at', scopedSlots: { customRender: 'ts' }, width: 170 },
+        { title: this.$t('agentTokens.expiresAt') || 'Expires', dataIndex: 'expires_at', scopedSlots: { customRender: 'ts' }, width: 170 },
+        { title: this.$t('common.actions') || 'Actions', scopedSlots: { customRender: 'actions' }, width: 100, fixed: 'right' }
+      ]
+    },
+    auditColumns () {
+      return [
+        { title: this.$t('agentTokens.col.id') || 'ID', dataIndex: 'id', width: 70 },
+        { title: this.$t('agentTokens.col.agent') || 'Agent', dataIndex: 'agent_name', width: 160 },
+        { title: this.$t('agentTokens.col.method') || 'Method', dataIndex: 'method', width: 80 },
+        { title: this.$t('agentTokens.col.route') || 'Route', dataIndex: 'route', width: 280, ellipsis: true },
+        { title: this.$t('agentTokens.col.class') || 'Class', dataIndex: 'scope_class', scopedSlots: { customRender: 'scope' }, width: 80 },
+        { title: this.$t('agentTokens.col.status') || 'Status', dataIndex: 'status_code', scopedSlots: { customRender: 'status' }, width: 90 },
+        { title: this.$t('agentTokens.col.duration') || 'Duration', dataIndex: 'duration_ms', scopedSlots: { customRender: 'duration' }, width: 100 },
+        { title: this.$t('agentTokens.col.when') || 'When', dataIndex: 'created_at', scopedSlots: { customRender: 'ts' }, width: 170 }
+      ]
     }
   },
   mounted () {
@@ -347,7 +372,8 @@ export default {
         const resp = await listAgentTokens()
         this.tokens = (resp && resp.data) || []
       } catch (e) {
-        this.$message.error('Failed to load tokens: ' + (e.message || e))
+        const tpl = this.$t('agentTokens.error.loadTokens') || 'Failed to load tokens: {0}'
+        this.$message.error(tpl.replace('{0}', e.message || e))
       } finally {
         this.loadingTokens = false
       }
@@ -358,7 +384,8 @@ export default {
         const resp = await listAgentAudit({ limit: this.auditLimit })
         this.audit = (resp && resp.data) || []
       } catch (e) {
-        this.$message.error('Failed to load audit log: ' + (e.message || e))
+        const tpl = this.$t('agentTokens.error.loadAudit') || 'Failed to load audit log: {0}'
+        this.$message.error(tpl.replace('{0}', e.message || e))
       } finally {
         this.loadingAudit = false
       }
@@ -387,13 +414,14 @@ export default {
           const resp = await issueAgentToken(payload)
           const data = (resp && resp.data) || resp
           if (!data || !data.token) {
-            throw new Error((resp && resp.message) || 'Empty response')
+            throw new Error((resp && resp.message) || (this.$t('agentTokens.error.emptyResp') || 'Empty response'))
           }
           this.revealed = data
           this.issueModalVisible = false
           this.loadTokens()
         } catch (e) {
-          this.$message.error('Issue failed: ' + (e.message || e))
+          const tpl = this.$t('agentTokens.error.issue') || 'Issue failed: {0}'
+          this.$message.error(tpl.replace('{0}', e.message || e))
         } finally {
           this.issuing = false
         }
@@ -405,12 +433,12 @@ export default {
         this.$message.success(this.$t('agentTokens.revoked') || 'Token revoked')
         this.loadTokens()
       } catch (e) {
-        this.$message.error('Revoke failed: ' + (e.message || e))
+        const tpl = this.$t('agentTokens.error.revoke') || 'Revoke failed: {0}'
+        this.$message.error(tpl.replace('{0}', e.message || e))
       }
     },
     copyToken (token) {
       try {
-        // Best-effort; navigator.clipboard requires HTTPS or localhost.
         if (navigator && navigator.clipboard && navigator.clipboard.writeText) {
           navigator.clipboard.writeText(token)
         } else {
@@ -423,7 +451,7 @@ export default {
         }
         this.$message.success(this.$t('agentTokens.copied') || 'Token copied to clipboard')
       } catch (e) {
-        this.$message.warning('Copy failed; please select and copy manually.')
+        this.$message.warning(this.$t('agentTokens.error.copy') || 'Copy failed; please select and copy manually.')
       }
     },
     openQuickstart () {
@@ -453,11 +481,12 @@ export default {
       gap: 8px;
       margin: 0;
       font-size: 22px;
+      color: rgba(0, 0, 0, 0.85);
     }
 
     .page-desc {
       margin-top: 6px;
-      color: #888;
+      color: rgba(0, 0, 0, 0.55);
       max-width: 920px;
     }
   }
@@ -474,6 +503,11 @@ export default {
       align-items: center;
       gap: 8px;
     }
+
+    .entries-label {
+      margin-left: 8px;
+      color: rgba(0, 0, 0, 0.45);
+    }
   }
 
   .agent-table-card {
@@ -482,7 +516,7 @@ export default {
 
   .hint {
     margin-top: 4px;
-    color: #999;
+    color: rgba(0, 0, 0, 0.45);
     font-size: 12px;
 
     &.danger {
@@ -490,25 +524,179 @@ export default {
     }
   }
 
-  .reveal-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 12px;
-
-    .reveal-label {
-      width: 90px;
-      color: #888;
-    }
-
-    .reveal-token-input {
-      flex: 1;
-      font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
-    }
-  }
-
   .text-muted {
-    color: #999;
+    color: rgba(0, 0, 0, 0.45);
   }
+
+  /* ===== Dark theme ===== */
+  &.theme-dark {
+    .page-header {
+      .page-title { color: rgba(255, 255, 255, 0.9); }
+      .page-desc { color: rgba(255, 255, 255, 0.55); }
+    }
+
+    .toolbar .entries-label { color: rgba(255, 255, 255, 0.55); }
+
+    .hint { color: rgba(255, 255, 255, 0.55); }
+
+    .text-muted { color: rgba(255, 255, 255, 0.45); }
+
+    /deep/ .agent-table-card,
+    /deep/ .ant-card {
+      background: #1c1c1c;
+      border-color: #303030;
+
+      .ant-card-body { background: #1c1c1c; }
+    }
+
+    /deep/ .ant-tabs-bar { border-bottom-color: #303030; }
+    /deep/ .ant-tabs-tab { color: rgba(255, 255, 255, 0.65); }
+    /deep/ .ant-tabs-tab-active { color: #1890ff; }
+    /deep/ .ant-tabs-ink-bar { background-color: #1890ff; }
+
+    /deep/ .ant-table {
+      color: rgba(255, 255, 255, 0.85);
+      background: transparent;
+
+      .ant-table-thead > tr > th {
+        background: #262626;
+        color: rgba(255, 255, 255, 0.85);
+        border-bottom-color: #303030;
+      }
+      .ant-table-tbody > tr > td {
+        border-bottom-color: #303030;
+      }
+      .ant-table-tbody > tr:hover:not(.ant-table-expanded-row) > td {
+        background: #262626;
+      }
+      .ant-table-placeholder {
+        background: #1c1c1c;
+        border-color: #303030;
+        color: rgba(255, 255, 255, 0.45);
+      }
+    }
+
+    /deep/ .ant-pagination-item,
+    /deep/ .ant-pagination-prev .ant-pagination-item-link,
+    /deep/ .ant-pagination-next .ant-pagination-item-link {
+      background: #1c1c1c;
+      border-color: #303030;
+      a, .anticon { color: rgba(255, 255, 255, 0.65); }
+    }
+    /deep/ .ant-pagination-item-active {
+      border-color: #1890ff;
+      a { color: #1890ff; }
+    }
+    /deep/ .ant-pagination-disabled .ant-pagination-item-link {
+      color: rgba(255, 255, 255, 0.25);
+    }
+
+    /deep/ .ant-input-number {
+      background: #141414;
+      border-color: #303030;
+      color: rgba(255, 255, 255, 0.85);
+      .ant-input-number-input { color: rgba(255, 255, 255, 0.85); }
+    }
+  }
+}
+</style>
+
+<!--
+  Modals (issue / reveal) are portaled to <body>, so scoped styles cannot reach
+  them.  We add an unscoped block keyed by the wrapper class we set via
+  :wrapClassName, so the dark adaptation still applies inside the modal.
+-->
+<style lang="less">
+.agent-tokens-modal {
+  .reveal-body {
+    .reveal-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+
+      .reveal-label {
+        width: 90px;
+        color: rgba(0, 0, 0, 0.55);
+        flex-shrink: 0;
+      }
+      .reveal-value { color: rgba(0, 0, 0, 0.85); }
+      .reveal-token-input {
+        flex: 1;
+        font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+      }
+    }
+  }
+
+  .hint {
+    margin-top: 4px;
+    color: rgba(0, 0, 0, 0.45);
+    font-size: 12px;
+    &.danger { color: #ff4d4f; }
+  }
+
+  &.theme-dark {
+    .ant-modal-content,
+    .ant-modal-header { background: #1f1f1f; border-color: #303030; }
+    .ant-modal-title { color: rgba(255, 255, 255, 0.9); }
+    .ant-modal-close-x { color: rgba(255, 255, 255, 0.55); }
+    .ant-modal-footer { border-top-color: #303030; }
+
+    .ant-form-item-label > label { color: rgba(255, 255, 255, 0.85); }
+
+    .ant-input,
+    .ant-input-number,
+    .ant-input-number-input {
+      background: #141414;
+      border-color: #303030;
+      color: rgba(255, 255, 255, 0.85);
+    }
+    .ant-input::placeholder,
+    .ant-input-number-input::placeholder { color: rgba(255, 255, 255, 0.35); }
+
+    .ant-checkbox-wrapper { color: rgba(255, 255, 255, 0.85); }
+
+    .reveal-body {
+      .reveal-label { color: rgba(255, 255, 255, 0.55); }
+      .reveal-value { color: rgba(255, 255, 255, 0.9); }
+      .reveal-token-input {
+        background: #141414;
+        border-color: #303030;
+        color: rgba(255, 255, 255, 0.95);
+      }
+    }
+
+    .hint { color: rgba(255, 255, 255, 0.55); }
+  }
+}
+
+/* Fallback adapter: when the global theme switches body to dark/realdark
+   but the wrapClassName binding didn't catch it (e.g. modal opened before
+   theme change), still apply dark styles. */
+body.dark .agent-tokens-modal,
+body.realdark .agent-tokens-modal {
+  .ant-modal-content,
+  .ant-modal-header { background: #1f1f1f; border-color: #303030; }
+  .ant-modal-title { color: rgba(255, 255, 255, 0.9); }
+  .ant-modal-close-x { color: rgba(255, 255, 255, 0.55); }
+  .ant-modal-footer { border-top-color: #303030; }
+  .ant-form-item-label > label { color: rgba(255, 255, 255, 0.85); }
+  .ant-input,
+  .ant-input-number,
+  .ant-input-number-input {
+    background: #141414;
+    border-color: #303030;
+    color: rgba(255, 255, 255, 0.85);
+  }
+  .reveal-body {
+    .reveal-label { color: rgba(255, 255, 255, 0.55); }
+    .reveal-value { color: rgba(255, 255, 255, 0.9); }
+    .reveal-token-input {
+      background: #141414;
+      border-color: #303030;
+      color: rgba(255, 255, 255, 0.95);
+    }
+  }
+  .hint { color: rgba(255, 255, 255, 0.55); }
 }
 </style>

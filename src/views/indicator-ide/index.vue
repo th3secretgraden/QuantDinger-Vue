@@ -432,8 +432,10 @@
               </div>
             </div>
             <div v-show="paramsPanelExpanded" class="params-scroll params-scroll--right">
-              <div class="params-grid">
-                <div class="param-section">
+              <!-- 上三下一：三列等宽等高 + 下方全宽风控，避免 auto-fit 网格在缩窗时行高失控 -->
+              <div class="params-layout">
+                <div class="params-row-three">
+                  <div class="param-section param-section--top">
                   <div class="param-label">{{ $t('indicatorIde.dateRange') }}</div>
                   <div class="date-presets">
                     <a-button
@@ -452,9 +454,9 @@
                       <a-date-picker v-model="endDate" :placeholder="$t('indicatorIde.end')" style="width: 100%" size="small" />
                     </a-col>
                   </a-row>
-                </div>
+                  </div>
 
-                <div class="param-section">
+                  <div class="param-section param-section--top">
                   <div class="param-label">{{ $t('indicatorIde.capital') }}</div>
                   <a-row :gutter="8">
                     <a-col :span="12">
@@ -511,27 +513,78 @@
                       />
                     </a-col>
                   </a-row>
+                  </div>
+
+                  <div class="param-section param-section--top">
+                    <div class="param-label">{{ $t('indicatorIde.direction') }}</div>
+                    <a-radio-group v-model="tradeDirection" class="direction-radio-group">
+                      <a-radio-button value="long">
+                        <a-icon type="arrow-up" /> {{ $t('indicatorIde.long') }}
+                      </a-radio-button>
+                      <a-radio-button value="short">
+                        <a-icon type="arrow-down" /> {{ $t('indicatorIde.short') }}
+                      </a-radio-button>
+                      <a-radio-button value="both">
+                        <a-icon type="swap" /> {{ $t('indicatorIde.both') }}
+                      </a-radio-button>
+                    </a-radio-group>
+                    <div style="margin-top: 8px;">
+                      <a-tooltip :title="$t('indicatorIde.mtfHint')">
+                        <a-checkbox v-model="enableMtf">{{ $t('indicatorIde.highPrecisionMtf') }}</a-checkbox>
+                      </a-tooltip>
+                    </div>
+                  </div>
                 </div>
 
-                <div class="param-section param-section--full">
-                  <div class="param-label">{{ $t('indicatorIde.direction') }}</div>
-                  <a-radio-group v-model="tradeDirection" class="direction-radio-group">
-                    <a-radio-button value="long">
-                      <a-icon type="arrow-up" /> {{ $t('indicatorIde.long') }}
-                    </a-radio-button>
-                    <a-radio-button value="short">
-                      <a-icon type="arrow-down" /> {{ $t('indicatorIde.short') }}
-                    </a-radio-button>
-                    <a-radio-button value="both">
-                      <a-icon type="swap" /> {{ $t('indicatorIde.both') }}
-                    </a-radio-button>
-                  </a-radio-group>
-                  <div style="margin-top: 8px;">
-                    <a-tooltip :title="$t('indicatorIde.mtfHint')">
-                      <a-checkbox v-model="enableMtf">{{ $t('indicatorIde.highPrecisionMtf') }}</a-checkbox>
-                    </a-tooltip>
+                <div
+                  v-if="!strategyDirectivesAlertDismissed || strategyDirectivesSummary.length"
+                  class="params-row-full"
+                >
+                  <div class="param-section strategy-directives-card">
+                    <a-alert
+                      v-if="!strategyDirectivesAlertDismissed"
+                      type="info"
+                      show-icon
+                      closable
+                      class="strategy-directives-alert"
+                      @close="dismissStrategyDirectivesAlert"
+                    >
+                    <template slot="message">{{ $t('indicatorIde.strategyDirectives.alertTitle') }}</template>
+                    <template slot="description">
+                      <div>{{ $t('indicatorIde.strategyDirectives.alertDesc') }}</div>
+                      <a class="strategy-directives-doc-link" @click.prevent="openStrategyDirectivesDocs">
+                        {{ $t('indicatorIde.strategyDirectives.viewDocs') }}
+                      </a>
+                    </template>
+                    </a-alert>
+
+                    <div class="strategy-directives-header">
+                      <span class="param-label" style="margin: 0;">
+                        <a-icon type="lock" /> {{ $t('indicatorIde.strategyDirectives.title') }}
+                      </span>
+                      <a-tooltip :title="$t('indicatorIde.strategyDirectives.editHint')">
+                        <a class="strategy-directives-jump" @click="jumpToStrategyDirectiveLine()">
+                          <a-icon type="edit" /> {{ $t('indicatorIde.strategyDirectives.editAction') }}
+                        </a>
+                      </a-tooltip>
+                    </div>
+
+                    <div v-if="!strategyDirectivesSummary.length" class="strategy-directives-empty">
+                      {{ $t('indicatorIde.strategyDirectives.empty') }}
+                    </div>
+                    <div v-else class="strategy-directives-list">
+                      <div
+                        v-for="item in strategyDirectivesSummary"
+                        :key="item.key"
+                        class="strategy-directive-row"
+                        :class="{ 'is-set': item.isSet }"
+                        @click="jumpToStrategyDirectiveLine(item.key)"
+                      >
+                        <span class="strategy-directive-label">{{ item.label }}</span>
+                        <span class="strategy-directive-value" :class="{ 'is-empty': !item.isSet }">{{ item.display }}</span>
+                      </div>
+                    </div>
                   </div>
-                  <div class="param-strategy-hint">{{ $t('indicatorIde.strategyFromCodeHint') }}</div>
                 </div>
               </div>
             </div>
@@ -1146,6 +1199,11 @@ function purchasedMarketHintStorageKey (userId) {
   return `qd_ide_purchased_market_hint_dismissed_${u}`
 }
 
+function strategyDirectivesAlertStorageKey (userId) {
+  const u = userId != null && userId !== '' ? String(userId) : '0'
+  return `qd_ide_strategy_directives_alert_dismissed_${u}`
+}
+
 function ideUiCacheStorageKey (userId) {
   const u = userId != null && userId !== '' ? String(userId) : '0'
   return `qd_ide_ui_cache_v1_${u}`
@@ -1175,6 +1233,9 @@ export default {
       paramsPanelExpanded: true,
       /** 已购指标说明条：用户关闭后按账号写入 storage，不再展示 */
       purchasedMarketHintDismissed: false,
+
+      /** "# @strategy 来自代码"提示横幅；用户关闭后按账号持久化 */
+      strategyDirectivesAlertDismissed: false,
 
       /** 右侧工作区：chart=图表与闪电交易，backtest=回测参数与结果 */
       ideWorkspaceTab: 'chart',
@@ -1297,6 +1358,53 @@ export default {
     },
     chartTheme () {
       return this.isDarkTheme ? 'dark' : 'light'
+    },
+    /** 解析当前代码里的 # @strategy 指令，生成只读"风控来自代码"卡片所需的展示数据。
+     *  数据源唯一来自代码注释，避免与 UI 输入冲突。 */
+    strategyDirectivesSummary () {
+      const raw = this.parseStrategyAnnotationRaw(this.currentCode || '')
+      const t = (k) => this.$t(`indicatorIde.strategyDirectives.fields.${k}`) || k
+      const notSet = this.$t('indicatorIde.strategyDirectives.notSet') || '—'
+      const fmtPct = (rawValue) => {
+        const n = parseFloat(rawValue)
+        if (!isFinite(n)) return notSet
+        const pct = n > 1 && n <= 100 ? n : n * 100
+        const fixed = Math.abs(pct) < 1 ? pct.toFixed(2) : pct.toFixed(1)
+        return `${fixed}%`
+      }
+      const fmtBool = (rawValue) => {
+        const on = ['true', '1', 'yes', 'on'].includes(String(rawValue || '').toLowerCase())
+        return on
+          ? this.$t('indicatorIde.strategyDirectives.on') || 'On'
+          : this.$t('indicatorIde.strategyDirectives.off') || 'Off'
+      }
+      const fmtDirection = (rawValue) => {
+        const v = String(rawValue || '').toLowerCase()
+        if (v === 'long') return this.$t('indicatorIde.long') || 'Long'
+        if (v === 'short') return this.$t('indicatorIde.short') || 'Short'
+        if (v === 'both') return this.$t('indicatorIde.both') || 'Both'
+        return rawValue || notSet
+      }
+
+      const fields = [
+        { key: 'stopLossPct', formatter: fmtPct },
+        { key: 'takeProfitPct', formatter: fmtPct },
+        { key: 'entryPct', formatter: fmtPct },
+        { key: 'trailingEnabled', formatter: fmtBool },
+        { key: 'trailingStopPct', formatter: fmtPct },
+        { key: 'trailingActivationPct', formatter: fmtPct },
+        { key: 'tradeDirection', formatter: fmtDirection }
+      ]
+      return fields.map(({ key, formatter }) => {
+        const isSet = Object.prototype.hasOwnProperty.call(raw, key) && raw[key] != null && raw[key] !== ''
+        return {
+          key,
+          label: t(key),
+          isSet,
+          rawValue: raw[key],
+          display: isSet ? formatter(raw[key]) : notSet
+        }
+      })
     },
     /** 绑定 this，供闪电交易子组件内调用 chartToolbarGetPopupContainer */
     ideQtOverlayGetContainer () {
@@ -1550,6 +1658,7 @@ export default {
   async created () {
     await this.loadUserId()
     this.loadPurchasedMarketHintDismissed()
+    this.loadStrategyDirectivesAlertDismissed()
     await this.loadIndicators()
     await this.loadWatchlist()
     this.restoreIdeUiState()
@@ -1623,6 +1732,68 @@ export default {
       try {
         storage.set(purchasedMarketHintStorageKey(this.userId), '1')
       } catch (_) { /* ignore quota */ }
+    },
+
+    loadStrategyDirectivesAlertDismissed () {
+      try {
+        const raw = storage.get(strategyDirectivesAlertStorageKey(this.userId))
+        this.strategyDirectivesAlertDismissed =
+          raw === true || raw === 1 || raw === '1' || raw === 'true'
+      } catch (_) {
+        this.strategyDirectivesAlertDismissed = false
+      }
+    },
+
+    dismissStrategyDirectivesAlert () {
+      this.strategyDirectivesAlertDismissed = true
+      try {
+        storage.set(strategyDirectivesAlertStorageKey(this.userId), '1')
+      } catch (_) { /* ignore quota */ }
+    },
+
+    openStrategyDirectivesDocs () {
+      const url = 'https://github.com/brokermr810/QuantDinger/blob/main/docs/STRATEGY_DEV_GUIDE.md#41-fixed-stop-loss-take-profit-and-entry-sizing-in-indicatorstrategy'
+      try {
+        window.open(url, '_blank', 'noopener')
+      } catch (_) { /* ignore */ }
+    },
+
+    /** 在 CodeMirror 中跳到指定 # @strategy 行；若给定 key 但未找到，则跳到第一条；都没有则置顶。 */
+    jumpToStrategyDirectiveLine (key) {
+      const cm = this.cmInstance
+      if (!cm) return
+      const code = String(this.currentCode || '')
+      if (!code) return
+      const lines = code.split('\n')
+      const lineRe = key
+        ? new RegExp('^\\s*#\\s*@strategy\\s+' + key + '\\b', 'i')
+        : /^\s*#\s*@strategy\s+/i
+      let target = -1
+      for (let i = 0; i < lines.length; i++) {
+        if (lineRe.test(lines[i])) { target = i; break }
+      }
+      if (target < 0 && key) {
+        for (let i = 0; i < lines.length; i++) {
+          if (/^\s*#\s*@strategy\s+/i.test(lines[i])) { target = i; break }
+        }
+      }
+      if (target < 0) target = 0
+
+      try {
+        if (this.codeDrawerVisible === false) {
+          this.codeDrawerVisible = true
+        }
+      } catch (_) { /* ignore */ }
+
+      this.$nextTick(() => {
+        try {
+          cm.focus()
+          cm.setCursor({ line: target, ch: 0 })
+          if (typeof cm.scrollIntoView === 'function') {
+            cm.scrollIntoView({ line: target, ch: 0 }, 80)
+          }
+        } catch (_) { /* ignore */ }
+      })
     },
 
     restoreIdeUiState () {
@@ -3535,7 +3706,15 @@ export default {
       const label = moment().format('YYYY-MM-DD HH:mm')
       return (
         `my_indicator_name = "New Indicator ${label}"\n` +
-        'my_indicator_description = "可选：用 # @strategy 配置风控与仓位；杠杆在回测面板设置。为 df 设置 buy/sell 布尔列并定义 output。"\n\n' +
+        'my_indicator_description = "Edit # @strategy lines below to control risk and position; leverage stays in the backtest panel."\n\n' +
+        '# ===== Strategy defaults (single source of truth) =====\n' +
+        '# @strategy stopLossPct 0.03            # Hard stop-loss (3%)\n' +
+        '# @strategy takeProfitPct 0.06          # Take-profit (6%)\n' +
+        '# @strategy entryPct 1.0                # Use 100% of available capital per entry\n' +
+        '# @strategy trailingEnabled false       # Set true to enable trailing stop\n' +
+        '# @strategy trailingStopPct 0.02        # Trailing distance (2%)\n' +
+        '# @strategy trailingActivationPct 0.03  # Activate trailing after +3% in profit\n' +
+        '# @strategy tradeDirection long         # long | short | both\n\n' +
         'df = df.copy()\n' +
         "df['buy'] = False\n" +
         "df['sell'] = False\n\n" +
@@ -4030,6 +4209,7 @@ export default {
     },
     userId () {
       this.loadPurchasedMarketHintDismissed()
+      this.loadStrategyDirectivesAlertDismissed()
     },
     selectedIndicatorIsPurchased () {
       this.$nextTick(() => this.applyCodeMirrorReadOnly())
@@ -4658,8 +4838,12 @@ export default {
 
 // ===== Params =====
 .params-scroll {
-  flex: 1;
-  overflow-y: auto;
+  /* 勿 flex:1：若外层变为 flex 列，会把整块参数区撑满视口，网格同行三卡被 stretch 成「高垫」、风控区被顶出首屏 */
+  flex: none;
+  min-height: 0;
+  /* 纵向滚动交给外层 .ide-backtest-scroll-mount，避免本层被撑高后 align-content:stretch 把网格行拉成「深井」 */
+  overflow-x: hidden;
+  overflow-y: visible;
   padding: 10px 12px;
   &::-webkit-scrollbar { width: 4px; }
   &::-webkit-scrollbar-thumb { background: #d9d9d9; border-radius: 2px; }
@@ -4675,23 +4859,67 @@ export default {
   border: 1px solid rgba(15, 23, 42, 0.06);
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
   min-width: 0;
+  min-height: 0;
+  height: auto;
+  max-height: none;
   overflow: hidden;
+  /* 避免 ant-row 在窄宽下 stretch 把整卡撑成与兄弟同高 */
+  /deep/ .ant-row {
+    align-items: flex-start;
+  }
 }
-.param-section--full { grid-column: 1 / -1; }
 
-.direction-radio-group {
-  display: flex !important;
+/* 回测参数：上三（等宽 1/3、等高）下一（风控全宽） */
+.params-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   width: 100%;
   min-width: 0;
-  flex-wrap: wrap;
+  box-sizing: border-box;
+}
+.params-row-three {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+  align-items: stretch;
+}
+.params-row-three > .param-section--top {
+  align-self: stretch;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.params-row-full {
+  width: 100%;
+  min-width: 0;
+  flex: 0 0 auto;
+  box-sizing: border-box;
+}
+.params-row-full > .strategy-directives-card {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.direction-radio-group {
+  /* 用网格等分三钮，避免 flex:1 + min-width 在窄侧栏里把同行其它 grid 列挤没 */
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
+  width: 100%;
+  min-width: 0;
   /deep/ .ant-radio-button-wrapper {
-    flex: 1 1 calc(33.333% - 6px);
-    min-width: 120px;
+    flex: none !important;
+    min-width: 0 !important;
     text-align: center;
-    height: 34px;
-    line-height: 32px;
-    font-size: 12px;
+    height: auto;
+    min-height: 34px;
+    line-height: 1.25;
+    padding: 6px 4px !important;
+    font-size: 11px;
     font-weight: 500;
     border-radius: 8px !important;
     border: 1px solid #e8e8e8 !important;
@@ -4733,6 +4961,82 @@ export default {
   color: #8c8c8c;
   line-height: 1.5;
 }
+.strategy-directives-card {
+  background: #fafbfc;
+  border: 1px solid #eef0f3;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-top: 4px;
+}
+.strategy-directives-alert {
+  margin-bottom: 10px;
+  /* show-icon + closable：勿用对称 padding 覆盖 Ant 默认，否则图标会与标题重叠 */
+  padding: 10px 30px 10px 48px !important;
+  /deep/ .ant-alert-message {
+    font-size: 12px;
+    font-weight: 600;
+    padding-left: 0;
+  }
+  /deep/ .ant-alert-description { font-size: 11.5px; line-height: 1.55; }
+}
+.strategy-directives-doc-link {
+  display: inline-block;
+  margin-top: 4px;
+  color: #1890ff;
+  font-size: 11.5px;
+  cursor: pointer;
+  &:hover { color: #40a9ff; text-decoration: underline; }
+}
+.strategy-directives-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.strategy-directives-jump {
+  font-size: 11px;
+  color: #1890ff;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  > .anticon { margin-right: 2px; }
+  &:hover { color: #40a9ff; }
+}
+.strategy-directives-empty {
+  font-size: 11px;
+  color: #8c8c8c;
+  padding: 4px 0;
+  font-style: italic;
+}
+.strategy-directives-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 14px;
+}
+.strategy-directive-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11.5px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s;
+  &:hover { background: rgba(24, 144, 255, 0.06); }
+  &.is-set { color: #1f2937; }
+}
+.strategy-directive-label {
+  color: #6b7280;
+  margin-right: 8px;
+  white-space: nowrap;
+}
+.strategy-directive-value {
+  font-weight: 600;
+  color: #1f2937;
+  font-variant-numeric: tabular-nums;
+  &.is-empty { color: #bfbfbf; font-weight: 400; font-style: italic; }
+}
 .param-label {
   font-size: 11px;
   font-weight: 700;
@@ -4761,26 +5065,10 @@ export default {
   }
 }
 
-@media (max-width: 1500px) {
-  .params-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .param-section--full {
-    grid-column: auto;
-  }
-}
-
-@media (max-width: 1280px) {
-  .direction-radio-group /deep/ .ant-radio-button-wrapper {
-    flex-basis: calc(50% - 4px);
-  }
-}
-
-@media (max-width: 1100px) {
-  .direction-radio-group /deep/ .ant-radio-button-wrapper {
-    flex-basis: 100%;
-    min-width: 0;
+/* 极窄视口：方向三钮改竖排（仍基于 viewport；侧栏极窄时由 grid minmax 已保证日期/资金先换行） */
+@media (max-width: 360px) {
+  .direction-radio-group {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -5192,14 +5480,20 @@ export default {
 }
 .params-card {
   flex-shrink: 0;
+  flex-grow: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
   margin: 12px 0;
   border: 1px solid rgba(15, 23, 42, 0.08);
   border-radius: 12px;
   background: linear-gradient(165deg, #ffffff 0%, #f8fafc 55%, #f1f5f9 100%);
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 28px rgba(15, 23, 42, 0.06);
   overflow: hidden;
+  min-height: 0;
 }
 .params-card-header {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -5241,13 +5535,6 @@ export default {
     &:hover { color: @primary-color; background: rgba(24, 144, 255, 0.08); }
   }
 }
-.params-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  min-width: 0;
-  overflow: hidden;
-}
 .result-tabs {
   flex: 0 0 auto;
   min-height: 0;
@@ -5264,10 +5551,25 @@ export default {
   /deep/ .ant-tabs-bar {
     margin-bottom: 0;
     flex-shrink: 0;
-    background: #fff;
+    background: linear-gradient(180deg, #fafbfc 0%, #f1f5f9 100%);
+    border: 1px solid #e8e8e8;
+    border-bottom: none;
+    border-radius: 10px 10px 0 0;
+    padding: 8px 12px 0;
     z-index: 2;
   }
-  /deep/ .ant-tabs-tab { font-size: 13px; }
+  /deep/ .ant-tabs-tab {
+    font-size: 13px;
+    font-weight: 600;
+    margin: 0 6px 0 0 !important;
+    padding: 8px 14px !important;
+    border-radius: 8px 8px 0 0 !important;
+    transition: color 0.15s, background 0.15s;
+  }
+  /deep/ .ant-tabs-tab-active {
+    background: #fff !important;
+    color: @primary-color !important;
+  }
   /* 外层 ide-backtest-scroll-mount 负责纵向滚动；内层按内容高度即可，勿 flex:1 撑在 auto 父级上（易变成 0 高） */
   /deep/ .ant-tabs-content {
     flex: 0 0 auto;
@@ -5275,7 +5577,12 @@ export default {
     overflow: visible;
     display: flex;
     flex-direction: column;
-    padding: 14px 20px 22px;
+    padding: 16px 20px 24px;
+    background: linear-gradient(180deg, #fbfcff 0%, #f6f8fc 100%);
+    border: 1px solid #e8e8e8;
+    border-top: none;
+    border-radius: 0 0 12px 12px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
   }
 }
 
@@ -5289,13 +5596,27 @@ export default {
   p { font-size: 12px; color: #8c8c8c; margin: 0; }
 }
 .result-data {
-  .metrics-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(108px, 1fr));
+    gap: 10px;
+    margin-bottom: 16px;
+  }
   .metric-card {
-    background: #fafbfc; border-radius: 8px; padding: 10px 8px; text-align: center; border: 1px solid #f0f0f0;
-    transition: transform 0.15s, box-shadow 0.15s;
-    &:hover { transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06); }
-    .metric-label { font-size: 10px; color: #8c8c8c; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.3px; }
-    .metric-value { font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; color: #333; line-height: 1.2; }
+    background: linear-gradient(165deg, #ffffff 0%, #f8fafc 100%);
+    border-radius: 10px;
+    padding: 12px 8px;
+    text-align: center;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(24, 144, 255, 0.1);
+      border-color: rgba(24, 144, 255, 0.22);
+    }
+    .metric-label { font-size: 10px; color: #64748b; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.35px; font-weight: 600; }
+    .metric-value { font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; color: #0f172a; line-height: 1.2; }
     &.positive .metric-value { color: #52c41a; }
     &.negative .metric-value { color: #f5222d; }
   }
@@ -5349,17 +5670,18 @@ export default {
 .equity-chart { width: 100%; height: 200px; border-radius: 8px; }
 
 .ide-tuning-launch {
-  padding: 16px 20px 22px;
+  padding: 18px 20px 26px;
 }
 .ide-tuning-launch-header {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 16px;
-  padding: 12px 14px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, rgba(24, 144, 255, 0.04) 0%, rgba(114, 46, 209, 0.03) 100%);
-  border: 1px solid rgba(24, 144, 255, 0.08);
+  margin-bottom: 18px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(24, 144, 255, 0.07) 0%, rgba(114, 46, 209, 0.05) 100%);
+  border: 1px solid rgba(24, 144, 255, 0.12);
+  box-shadow: 0 2px 10px rgba(24, 144, 255, 0.06);
 }
 .ide-tuning-launch-icon {
   width: 38px;
@@ -5386,17 +5708,17 @@ export default {
   line-height: 1.5;
 }
 .ide-tuning-method-cards {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(268px, 1fr));
+  gap: 14px;
 }
 .ide-tuning-method-card {
   position: relative;
-  padding: 14px 16px;
-  border-radius: 10px;
+  padding: 16px 18px;
+  border-radius: 12px;
   border: 1px solid rgba(15, 23, 42, 0.08);
-  background: #fff;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  background: linear-gradient(165deg, #ffffff 0%, #f8fafc 100%);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
   transition: all 0.25s ease;
   overflow: hidden;
   &::before {
@@ -5406,9 +5728,9 @@ export default {
     opacity: 0; transition: opacity 0.25s;
   }
   &:hover {
-    border-color: rgba(114, 46, 209, 0.2);
-    box-shadow: 0 4px 12px rgba(114, 46, 209, 0.08);
-    transform: translateY(-1px);
+    border-color: rgba(114, 46, 209, 0.22);
+    box-shadow: 0 8px 22px rgba(114, 46, 209, 0.1);
+    transform: translateY(-2px);
     &::before { opacity: 1; }
   }
 }
@@ -5453,6 +5775,11 @@ export default {
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
+  padding-top: 4px;
+  /deep/ .ant-btn {
+    border-radius: 8px;
+    font-weight: 600;
+  }
 }
 
 .experiment-panel {
@@ -6099,17 +6426,23 @@ export default {
     }
   }
   .ide-tuning-launch-header {
-    background: linear-gradient(135deg, rgba(24, 144, 255, 0.06) 0%, rgba(114, 46, 209, 0.04) 100%);
-    border-color: rgba(88, 166, 255, 0.12);
+    background: linear-gradient(135deg, rgba(24, 144, 255, 0.1) 0%, rgba(114, 46, 209, 0.06) 100%);
+    border-color: rgba(88, 166, 255, 0.2);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
   }
   .ide-tuning-launch-title { color: rgba(255, 255, 255, 0.88); }
   .ide-tuning-launch-subtitle { color: rgba(255, 255, 255, 0.45); }
   .ide-tuning-method-card {
-    background: #1f1f1f;
-    border-color: #363636;
-    box-shadow: none;
+    background: linear-gradient(165deg, #262626 0%, #1f1f1f 100%);
+    border-color: #404040;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
     &::before { opacity: 0; }
-    &:hover { border-color: rgba(114, 46, 209, 0.35); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35); transform: translateY(-1px); &::before { opacity: 1; } }
+    &:hover {
+      border-color: rgba(114, 46, 209, 0.45);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+      transform: translateY(-2px);
+      &::before { opacity: 1; }
+    }
   }
   .ide-tuning-method-card--ai {
     background: linear-gradient(165deg, #1f1f1f 0%, rgba(23, 125, 220, 0.06) 100%);
@@ -6139,8 +6472,23 @@ export default {
   .param-section { border-bottom-color: #303030; }
   .param-label { color: rgba(255,255,255,0.78); }
   .field-label { color: rgba(255,255,255,0.58); }
-  .result-tabs /deep/ .ant-tabs-bar { background: #141414; }
+  .result-tabs /deep/ .ant-tabs-bar {
+    background: linear-gradient(180deg, #1f1f1f 0%, #181818 100%);
+    border-color: #303030;
+    border-bottom: none;
+  }
+  .result-tabs /deep/ .ant-tabs-tab {
+    color: rgba(255, 255, 255, 0.55) !important;
+  }
+  .result-tabs /deep/ .ant-tabs-tab-active {
+    background: #1a1a1a !important;
+    color: #58a6ff !important;
+    border-color: #303030 !important;
+  }
   .result-tabs /deep/ .ant-tabs-content {
+    background: linear-gradient(180deg, #1a1a1a 0%, #141414 100%);
+    border-color: #303030;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
     &::-webkit-scrollbar-thumb { background: #434343; }
   }
   .params-card {
@@ -6178,6 +6526,45 @@ export default {
     &:hover { color: rgba(255, 255, 255, 0.88); }
   }
   .param-strategy-hint { color: rgba(255, 255, 255, 0.45); }
+  .strategy-directives-card {
+    background: #1a1a1a;
+    border-color: #303030;
+  }
+  .strategy-directives-empty { color: rgba(255, 255, 255, 0.45); }
+  .strategy-directive-row {
+    &:hover { background: rgba(88, 166, 255, 0.12); }
+    &.is-set { color: rgba(255, 255, 255, 0.88); }
+  }
+  .strategy-directive-label { color: rgba(255, 255, 255, 0.55); }
+  .strategy-directive-value {
+    color: rgba(255, 255, 255, 0.92);
+    &.is-empty { color: rgba(255, 255, 255, 0.35); }
+  }
+  .strategy-directives-jump,
+  .strategy-directives-doc-link { color: #58a6ff; &:hover { color: #79b8ff; } }
+  /* a-alert 默认 info 样式在暗色下对比度差，需覆盖 message/description/正文与 Ant 默认背景 */
+  .strategy-directives-alert {
+    &.ant-alert-info {
+      background: rgba(23, 125, 220, 0.16) !important;
+      border-color: rgba(88, 166, 255, 0.45) !important;
+    }
+  }
+  .strategy-directives-alert /deep/ .ant-alert-message {
+    color: rgba(255, 255, 255, 0.92) !important;
+  }
+  .strategy-directives-alert /deep/ .ant-alert-description {
+    color: rgba(255, 255, 255, 0.72) !important;
+    div {
+      color: rgba(255, 255, 255, 0.72) !important;
+    }
+  }
+  .strategy-directives-alert /deep/ .ant-alert-icon {
+    color: #58a6ff !important;
+  }
+  .strategy-directives-alert /deep/ .ant-alert-close-icon .anticon-close {
+    color: rgba(255, 255, 255, 0.55) !important;
+    &:hover { color: rgba(255, 255, 255, 0.88) !important; }
+  }
   .direction-radio-group /deep/ .ant-radio-button-wrapper {
     background: #262626;
     border-color: #434343 !important;
@@ -6233,10 +6620,15 @@ export default {
   .result-empty { p { color: rgba(255,255,255,0.45); } }
   .result-data {
     .metric-card {
-      background: #1f1f1f; border-color: #303030;
-      &:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
-      .metric-label { color: rgba(255,255,255,0.45); }
-      .metric-value { color: rgba(255,255,255,0.85); }
+      background: linear-gradient(165deg, #262626 0%, #1a1a1a 100%);
+      border-color: #363636;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+      &:hover {
+        box-shadow: 0 6px 18px rgba(23, 125, 220, 0.18);
+        border-color: rgba(88, 166, 255, 0.35);
+      }
+      .metric-label { color: rgba(255, 255, 255, 0.5); }
+      .metric-value { color: rgba(255, 255, 255, 0.9); }
       &.positive .metric-value { color: #49aa19; }
       &.negative .metric-value { color: #d32029; }
     }
@@ -6394,6 +6786,41 @@ export default {
 </style>
 
 <style lang="less">
+/* Layout 使用 body.dark 时，回测区 a-alert 仍可能保留 Ant 默认浅色 info 样式，在此兜底 */
+body.dark .indicator-ide .strategy-directives-alert.ant-alert-info {
+  background: rgba(23, 125, 220, 0.16) !important;
+  border-color: rgba(88, 166, 255, 0.45) !important;
+}
+body.dark .indicator-ide .strategy-directives-alert .ant-alert-message {
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+body.dark .indicator-ide .strategy-directives-alert .ant-alert-description,
+body.dark .indicator-ide .strategy-directives-alert .ant-alert-description div {
+  color: rgba(255, 255, 255, 0.72) !important;
+}
+body.dark .indicator-ide .strategy-directives-alert .ant-alert-icon {
+  color: #58a6ff !important;
+}
+body.dark .indicator-ide .strategy-directives-alert .ant-alert-close-icon .anticon-close {
+  color: rgba(255, 255, 255, 0.55) !important;
+}
+
+body.dark .indicator-ide .result-tabs .ant-tabs-bar {
+  background: linear-gradient(180deg, #1f1f1f 0%, #181818 100%) !important;
+  border-color: #303030 !important;
+}
+body.dark .indicator-ide .result-tabs .ant-tabs-content {
+  background: linear-gradient(180deg, #1a1a1a 0%, #141414 100%) !important;
+  border-color: #303030 !important;
+}
+body.dark .indicator-ide .result-tabs .ant-tabs-tab {
+  color: rgba(255, 255, 255, 0.55) !important;
+}
+body.dark .indicator-ide .result-tabs .ant-tabs-tab-active {
+  color: #58a6ff !important;
+  background: #1a1a1a !important;
+}
+
 /* ===== Watchlist dropdown ===== */
 .ide-watchlist-dropdown {
   .ant-select-dropdown-menu-item {

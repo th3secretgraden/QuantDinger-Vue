@@ -1758,6 +1758,14 @@ export default {
       if (!from || to === from) return
       this.selectedStrategy = null
       this.loadStrategies()
+    },
+    '$route.query': {
+      handler (q) {
+        if (q && String(q.tab) === 'strategy') {
+          this.topTab = 'strategy'
+        }
+      },
+      deep: true
     }
   },
   data () {
