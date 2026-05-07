@@ -3512,6 +3512,7 @@ const locale = {
   'profile.noEmailWarning': 'Vui lòng thiết lập email trước trong tab Thông tin cơ bản',
   'dashboard.analysis.market.CNStock': 'Cổ phiếu A',
   'dashboard.analysis.market.HKStock': 'Cổ phiếu H',
+  'dashboard.analysis.market.MOEX': 'MOEX',
   'dashboard.indicator.section.purchased': 'Chỉ báo đã mua',
   'dashboard.indicator.emptyPurchased': 'Chưa có chỉ báo đã mua, hãy xem thị trường chỉ báo',
   'dashboard.indicator.action.publish': 'Xuất bản lên cộng đồng',

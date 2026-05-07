@@ -2379,6 +2379,7 @@ const locale = {
   'profile.noEmailWarning': 'まず基本情報タブでメールアドレスを設定してください',
   'dashboard.analysis.market.CNStock': 'A株',
   'dashboard.analysis.market.HKStock': 'H株',
+  'dashboard.analysis.market.MOEX': 'MOEX',
   'dashboard.indicator.section.purchased': '購入済み指標',
   'dashboard.indicator.emptyPurchased': '購入済み指標はありません。指標マーケットをご覧ください',
   'dashboard.indicator.action.publish': 'コミュニティに公開',

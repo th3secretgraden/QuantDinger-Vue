@@ -1000,6 +1000,7 @@ const locale = {
   'dashboard.analysis.market.USStock': '美股',
   'dashboard.analysis.market.CNStock': 'A股',
   'dashboard.analysis.market.HKStock': 'H股',
+  'dashboard.analysis.market.MOEX': 'MOEX',
   'dashboard.analysis.market.Crypto': '加密货币',
   'dashboard.analysis.market.Forex': '外汇',
   'dashboard.analysis.market.Futures': '期货',

@@ -2378,6 +2378,7 @@ const locale = {
   'profile.noEmailWarning': '기본 정보 탭에서 이메일을 먼저 설정해 주세요',
   'dashboard.analysis.market.CNStock': 'A주',
   'dashboard.analysis.market.HKStock': 'H주',
+  'dashboard.analysis.market.MOEX': 'MOEX',
   'dashboard.indicator.section.purchased': '구매한 지표',
   'dashboard.indicator.emptyPurchased': '구매한 지표가 없습니다. 지표 마켓을 확인해 보세요',
   'dashboard.indicator.action.publish': '커뮤니티에 게시',

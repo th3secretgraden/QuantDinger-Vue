@@ -41,6 +41,7 @@
             :loading="loadingTokens"
             :pagination="{ pageSize: 20, showSizeChanger: false }"
             :rowKey="r => r.id"
+            :rowClassName="tokenRowClassName"
             size="middle"
           >
             <template slot="scopes" slot-scope="text">
@@ -61,7 +62,7 @@
             </template>
 
             <template slot="status" slot-scope="text">
-              <a-tag :color="text === 'active' ? 'blue' : 'default'">
+              <a-tag :color="tokenStatusTagColor(text)">
                 {{ text }}
               </a-tag>
             </template>
@@ -335,6 +336,19 @@ export default {
         expires_in_days: 30
       }
     },
+    tokenRowClassName (record) {
+      const s = (record && String(record.status || '').toLowerCase()) || ''
+      if (s === 'revoked') return 'token-row-revoked'
+      if (s === 'expired') return 'token-row-expired'
+      return ''
+    },
+    tokenStatusTagColor (status) {
+      const s = String(status || '').toLowerCase()
+      if (s === 'active') return 'blue'
+      if (s === 'revoked') return 'red'
+      if (s === 'expired') return 'default'
+      return 'default'
+    },
     scopeColor (s) {
       return ({ R: 'blue', W: 'cyan', B: 'geekblue', N: 'gold', C: 'volcano', T: 'red' })[s] || 'default'
     },
@@ -514,6 +528,20 @@ export default {
     margin-top: 8px;
   }
 
+  /* Revoked / expired rows — readable on light theme */
+  /deep/ .ant-table-tbody > tr.token-row-revoked > td {
+    background: #fff2f0 !important;
+  }
+  /deep/ .ant-table-tbody > tr.token-row-revoked:hover:not(.ant-table-expanded-row) > td {
+    background: #ffe3e0 !important;
+  }
+  /deep/ .ant-table-tbody > tr.token-row-expired > td {
+    background: #fafafa !important;
+  }
+  /deep/ .ant-table-tbody > tr.token-row-expired:hover:not(.ant-table-expanded-row) > td {
+    background: #f0f0f0 !important;
+  }
+
   .hint {
     margin-top: 4px;
     color: rgba(0, 0, 0, 0.45);
@@ -568,6 +596,19 @@ export default {
       }
       .ant-table-tbody > tr:hover:not(.ant-table-expanded-row) > td {
         background: #262626;
+      }
+      /* Revoked: keep a visible tint; do not inherit the same gray as active rows */
+      .ant-table-tbody > tr.token-row-revoked > td {
+        background: rgba(255, 77, 79, 0.12) !important;
+      }
+      .ant-table-tbody > tr.token-row-revoked:hover:not(.ant-table-expanded-row) > td {
+        background: rgba(255, 77, 79, 0.2) !important;
+      }
+      .ant-table-tbody > tr.token-row-expired > td {
+        background: rgba(255, 255, 255, 0.04) !important;
+      }
+      .ant-table-tbody > tr.token-row-expired:hover:not(.ant-table-expanded-row) > td {
+        background: rgba(255, 255, 255, 0.08) !important;
       }
       .ant-table-placeholder {
         background: #1c1c1c;

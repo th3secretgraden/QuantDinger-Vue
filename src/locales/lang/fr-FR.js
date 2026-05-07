@@ -2375,6 +2375,7 @@ const locale = {
   'profile.noEmailWarning': 'Veuillez d\'abord configurer votre adresse e-mail dans l\'onglet Informations de base',
   'dashboard.analysis.market.CNStock': 'Actions A',
   'dashboard.analysis.market.HKStock': 'Actions HK',
+  'dashboard.analysis.market.MOEX': 'MOEX',
   'dashboard.indicator.section.purchased': 'Mes indicateurs achetés',
   'dashboard.indicator.emptyPurchased': 'Aucun indicateur acheté, consultez le marché',
   'dashboard.indicator.action.publish': 'Publier dans la communauté',

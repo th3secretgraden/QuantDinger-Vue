@@ -964,6 +964,7 @@ const locale = {
   'dashboard.analysis.market.USStock': 'US Stock',
   'dashboard.analysis.market.CNStock': 'A-Shares',
   'dashboard.analysis.market.HKStock': 'HK Stocks',
+  'dashboard.analysis.market.MOEX': 'MOEX',
   'dashboard.analysis.market.Crypto': 'Cryptocurrency',
   'dashboard.analysis.market.Forex': 'Forex',
   'dashboard.analysis.market.Futures': 'Futures',

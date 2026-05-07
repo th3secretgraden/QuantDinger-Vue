@@ -2423,6 +2423,7 @@ const locale = {
   'profile.noEmailWarning': 'Bitte legen Sie zuerst Ihre E-Mail im Tab "Grundinformationen" fest',
   'dashboard.analysis.market.CNStock': 'Aktien (China)',
   'dashboard.analysis.market.HKStock': 'Aktien (Hongkong)',
+  'dashboard.analysis.market.MOEX': 'MOEX',
   'dashboard.indicator.section.purchased': 'Gekaufte Indikatoren',
   'dashboard.indicator.emptyPurchased': 'Keine gekauften Indikatoren, sehen Sie sich den Markt an',
   'dashboard.indicator.action.publish': 'In Community veröffentlichen',

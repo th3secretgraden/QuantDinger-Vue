@@ -2374,6 +2374,7 @@ const locale = {
   'profile.noEmailWarning': 'الرجاء تعيين بريدك الإلكتروني أولاً في علامة تبويب المعلومات الأساسية',
   'dashboard.analysis.market.CNStock': 'أسهم A',
   'dashboard.analysis.market.HKStock': 'أسهم HK',
+  'dashboard.analysis.market.MOEX': 'MOEX',
   'dashboard.indicator.section.purchased': 'المؤشرات التي اشتريتها',
   'dashboard.indicator.emptyPurchased': 'لا توجد مؤشرات مشتراة، اطلع على السوق',
   'dashboard.indicator.action.publish': 'نشر في المجتمع',

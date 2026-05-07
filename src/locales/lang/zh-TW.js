@@ -3986,6 +3986,7 @@ const locale = {
   'trading-bot.ai.networkError': '網路錯誤，請檢查連線後重試',
   'dashboard.analysis.market.CNStock': 'A股',
   'dashboard.analysis.market.HKStock': 'H股',
+  'dashboard.analysis.market.MOEX': 'MOEX',
   'dashboard.indicator.market.CNStock': 'A股',
   'dashboard.indicator.market.HKStock': 'H股',
   'dashboard.indicator.market.PredictionMarket': '預測市場',

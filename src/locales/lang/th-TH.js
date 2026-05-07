@@ -2375,6 +2375,7 @@ const locale = {
   'profile.noEmailWarning': 'กรุณาตั้งค่าอีเมลในแท็บข้อมูลพื้นฐานก่อน',
   'dashboard.analysis.market.CNStock': 'A股',
   'dashboard.analysis.market.HKStock': 'H股',
+  'dashboard.analysis.market.MOEX': 'MOEX',
   'dashboard.indicator.section.purchased': 'ตัวชี้วัดที่ฉันซื้อ',
   'dashboard.indicator.emptyPurchased': 'ยังไม่มีตัวชี้วัดที่ซื้อ ไปดูในตลาดตัวชี้วัด',
   'dashboard.indicator.action.publish': 'เผยแพร่สู่ชุมชน',
