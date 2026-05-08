@@ -8,8 +8,7 @@
       :handleMediaQuery="handleMediaQuery"
       :handleCollapse="handleCollapse"
       :i18nRender="i18nRender"
-      v-bind="settings"
-    >
+      v-bind="settings">
 
       <template #menuHeaderRender>
         <div class="sidebar-logo-wrapper" :class="{ 'sidebar-logo-wrapper--collapsed': collapsed }">
@@ -29,7 +28,12 @@
       </template>
 
       <!-- 用户协议弹窗 -->
-      <a-modal :visible="showLegalModal" :footer="null" :title="$t('menu.footer.userAgreement')" @cancel="showLegalModal = false" :width="800">
+      <a-modal
+        :visible="showLegalModal"
+        :footer="null"
+        :title="$t('menu.footer.userAgreement')"
+        @cancel="showLegalModal = false"
+        :width="800">
         <div style="max-height: 60vh; overflow: auto; white-space: pre-wrap; line-height: 1.8; padding: 16px;">
           {{ menuFooterConfig.legal.user_agreement || $t('user.login.legal.content') }}
         </div>
@@ -39,7 +43,12 @@
       </a-modal>
 
       <!-- 隐私条例弹窗 -->
-      <a-modal :visible="showPrivacyModal" :footer="null" :title="$t('menu.footer.privacyPolicy')" @cancel="showPrivacyModal = false" :width="800">
+      <a-modal
+        :visible="showPrivacyModal"
+        :footer="null"
+        :title="$t('menu.footer.privacyPolicy')"
+        @cancel="showPrivacyModal = false"
+        :width="800">
         <div style="max-height: 60vh; overflow: auto; white-space: pre-wrap; line-height: 1.8; padding: 16px;">
           {{ menuFooterConfig.legal.privacy_policy || $t('user.login.privacy.content') }}
         </div>
@@ -64,59 +73,10 @@
     </pro-layout>
 
     <!-- 菜单底部 footer - 直接写，不依赖插槽 -->
-    <div class="custom-menu-footer" :class="{ 'collapsed': collapsed, 'drawer-open': isMobile && isDrawerOpen, 'drawer-animating': isMobile && isDrawerAnimating }">
+    <div
+      class="custom-menu-footer"
+      :class="{ 'collapsed': collapsed, 'drawer-open': isMobile && isDrawerOpen, 'drawer-animating': isMobile && isDrawerAnimating }">
       <div v-if="!collapsed" class="menu-footer-content">
-        <!-- 联系我们 -->
-        <div class="footer-section">
-          <div class="section-title">{{ $t('menu.footer.contactUs') }}</div>
-          <div class="section-links">
-            <a :href="menuFooterConfig.contact.support_url" target="_blank">{{ $t('menu.footer.support') }}</a>
-            <span class="separator">|</span>
-            <a :href="menuFooterConfig.contact.feature_request_url" target="_blank">{{ $t('menu.footer.featureRequest') }}</a>
-          </div>
-        </div>
-
-        <!-- 获取支持 -->
-        <div class="footer-section">
-          <div class="section-title">{{ $t('menu.footer.getSupport') }}</div>
-          <div class="section-links">
-            <a :href="'mailto:' + menuFooterConfig.contact.email">{{ $t('menu.footer.email') }}</a>
-            <span class="separator">|</span>
-            <a :href="menuFooterConfig.contact.live_chat_url" target="_blank">{{ $t('menu.footer.liveChat') }}</a>
-          </div>
-        </div>
-
-        <!-- 社交账户 -->
-        <div class="footer-section" v-if="menuFooterConfig.social_accounts && menuFooterConfig.social_accounts.length > 0">
-          <div class="section-title">{{ $t('menu.footer.socialAccounts') }}</div>
-          <div class="social-icons">
-            <a
-              v-for="(account, index) in menuFooterConfig.social_accounts"
-              :key="index"
-              :href="account.url"
-              target="_blank"
-              rel="noopener noreferrer"
-              :title="account.name"
-              class="social-icon"
-            >
-              <Icon :icon="`simple-icons:${account.icon}`" class="social-icon-svg" />
-            </a>
-          </div>
-        </div>
-
-        <!-- 用户协议和隐私条例 -->
-        <div class="footer-section">
-          <div class="section-links">
-            <a @click="showLegalModal = true">{{ $t('menu.footer.userAgreement') }}</a>
-            <span class="separator">&</span>
-            <a @click="showPrivacyModal = true">{{ $t('menu.footer.privacyPolicy') }}</a>
-          </div>
-        </div>
-
-        <!-- 版权信息 -->
-        <div class="footer-section copyright">
-          {{ menuFooterConfig.copyright }}
-        </div>
         <!-- 版本号 -->
         <div class="footer-section version">
           V{{ appVersion }}
@@ -489,34 +449,34 @@ export default {
           const sider = this.$el?.querySelector('.ant-pro-sider') || document.querySelector('.ant-pro-sider')
           if (sider) {
             const siderRect = sider.getBoundingClientRect()
-          const footerHeight = menuFooter.offsetHeight || 220
+            const footerHeight = menuFooter.offsetHeight || 220
             menuFooter.style.position = 'fixed'
             menuFooter.style.left = `${siderRect.left}px`
             // 宽度由 CSS 的 .collapsed 类控制，不在这里设置
             menuFooter.style.bottom = '0px'
             menuFooter.style.zIndex = '100'
             menuFooter.style.display = 'block'
-          // 将 footer 高度写入 CSS 变量，方便样式中使用
-          sider.style.setProperty('--menu-footer-height', `${footerHeight}px`)
-          // 给侧栏主体预留出 footer 的高度，并允许滚动
-          const siderChildren = sider.querySelector('.ant-layout-sider-children')
-          if (siderChildren) {
-            siderChildren.style.paddingBottom = `${footerHeight + 12}px`
-            siderChildren.style.overflowY = 'auto'
-            siderChildren.style.overflowX = 'hidden'
-            siderChildren.style.webkitOverflowScrolling = 'touch'
-          }
-          // 进一步限制菜单区域高度，避免 footer 遮挡
-          const menuScroll = sider.querySelector('.ant-pro-sider-menu') ||
-            sider.querySelector('.ant-menu-root') ||
-            sider.querySelector('.ant-menu')
-          if (menuScroll) {
-            const availableHeight = Math.max(siderRect.height - footerHeight - 12, 120)
-            menuScroll.style.maxHeight = `${availableHeight}px`
-            menuScroll.style.overflowY = 'auto'
-            menuScroll.style.overflowX = 'hidden'
-            menuScroll.style.webkitOverflowScrolling = 'touch'
-          }
+            // 将 footer 高度写入 CSS 变量，方便样式中使用
+            sider.style.setProperty('--menu-footer-height', `${footerHeight}px`)
+            // 给侧栏主体预留出 footer 的高度，并允许滚动
+            const siderChildren = sider.querySelector('.ant-layout-sider-children')
+            if (siderChildren) {
+              siderChildren.style.paddingBottom = `${footerHeight + 12}px`
+              siderChildren.style.overflowY = 'auto'
+              siderChildren.style.overflowX = 'hidden'
+              siderChildren.style.webkitOverflowScrolling = 'touch'
+            }
+            // 进一步限制菜单区域高度，避免 footer 遮挡
+            const menuScroll = sider.querySelector('.ant-pro-sider-menu') ||
+              sider.querySelector('.ant-menu-root') ||
+              sider.querySelector('.ant-menu')
+            if (menuScroll) {
+              const availableHeight = Math.max(siderRect.height - footerHeight - 12, 120)
+              menuScroll.style.maxHeight = `${availableHeight}px`
+              menuScroll.style.overflowY = 'auto'
+              menuScroll.style.overflowX = 'hidden'
+              menuScroll.style.webkitOverflowScrolling = 'touch'
+            }
           } else {
             // 如果找不到菜单，使用默认位置
             menuFooter.style.position = 'fixed'
@@ -650,7 +610,7 @@ export default {
   padding-left: 0 !important;
   padding-right: 0;
 
-  > div {
+  >div {
     display: flex;
     align-items: center;
     width: 100%;
@@ -683,8 +643,9 @@ export default {
 }
 
 .ant-pro-sider-menu-sider.light .ant-menu-light {
-  height: 60vh!important;
+  height: 60vh !important;
 }
+
 /* 完全隐藏所有 footer */
 .basic-layout-wrapper {
   .ant-layout-footer {
@@ -706,27 +667,31 @@ export default {
     bottom: 0;
     left: 0;
     z-index: 100;
-    width: 256px; /* 统一固定宽度 256px */
+    width: 256px;
+    /* 统一固定宽度 256px */
     background: #111111;
     border-top: 1px solid #1c1c1c;
     /* 与菜单栏抽屉动画同步：使用相同的过渡时间和缓动函数 */
     /* Ant Design Vue Drawer 使用 0.3s 和 cubic-bezier(0.78, 0.14, 0.15, 0.86) */
     transition: left 0.3s cubic-bezier(0.78, 0.14, 0.15, 0.86),
-                width 0.3s cubic-bezier(0.78, 0.14, 0.15, 0.86),
-                max-width 0.3s cubic-bezier(0.78, 0.14, 0.15, 0.86),
-                opacity 0.3s cubic-bezier(0.78, 0.14, 0.15, 0.86);
+      width 0.3s cubic-bezier(0.78, 0.14, 0.15, 0.86),
+      max-width 0.3s cubic-bezier(0.78, 0.14, 0.15, 0.86),
+      opacity 0.3s cubic-bezier(0.78, 0.14, 0.15, 0.86);
     max-width: 256px;
-    display: block; /* 默认显示 */
+    display: block;
+    /* 默认显示 */
     opacity: 1;
 
     &.collapsed {
-      width: 80px; /* 折叠时菜单宽度 */
+      width: 80px;
+      /* 折叠时菜单宽度 */
       max-width: 80px;
     }
 
     /* 手机端：当菜单在 drawer 中时，需要更高的 z-index */
     @media (max-width: 768px) {
-      z-index: 1001; /* drawer 的 z-index 通常是 1000 */
+      z-index: 1001;
+      /* drawer 的 z-index 通常是 1000 */
 
       /* 当 drawer 未打开时，隐藏 footer */
       &:not(.drawer-open) {
@@ -744,9 +709,10 @@ export default {
       &.drawer-open:not(.drawer-animating) {
         opacity: 1;
         transition: left 0.3s cubic-bezier(0.78, 0.14, 0.15, 0.86),
-                    width 0.3s cubic-bezier(0.78, 0.14, 0.15, 0.86),
-                    max-width 0.3s cubic-bezier(0.78, 0.14, 0.15, 0.86),
-                    opacity 0.3s cubic-bezier(0.78, 0.14, 0.15, 0.86) 0.1s; /* 延迟 0.1s 显示，确保 drawer 先出现 */
+          width 0.3s cubic-bezier(0.78, 0.14, 0.15, 0.86),
+          max-width 0.3s cubic-bezier(0.78, 0.14, 0.15, 0.86),
+          opacity 0.3s cubic-bezier(0.78, 0.14, 0.15, 0.86) 0.1s;
+        /* 延迟 0.1s 显示，确保 drawer 先出现 */
       }
     }
 
@@ -762,12 +728,15 @@ export default {
       /* 隐藏滚动条但保持滚动功能 */
       scrollbar-width: thin;
       scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+
       &::-webkit-scrollbar {
         width: 4px;
       }
+
       &::-webkit-scrollbar-track {
         background: transparent;
       }
+
       &::-webkit-scrollbar-thumb {
         background: rgba(255, 255, 255, 0.2);
         border-radius: 2px;
@@ -905,8 +874,9 @@ export default {
 
   /* 监听菜单折叠状态，动态调整宽度 */
   ::v-deep .ant-pro-layout {
-    &.ant-pro-sider-collapsed ~ .custom-menu-footer,
-    .ant-pro-sider-collapsed ~ .custom-menu-footer {
+
+    &.ant-pro-sider-collapsed~.custom-menu-footer,
+    .ant-pro-sider-collapsed~.custom-menu-footer {
       width: 80px;
     }
   }
@@ -976,12 +946,14 @@ export default {
 /* 暗黑主题样式 */
 .basic-layout-wrapper.dark,
 .basic-layout-wrapper.realdark {
+
   /* Header 适配 - 与侧栏亮黑 #111 一致 + 顶缘内高光 */
   .ant-layout-header {
     background: #111111 !important;
     border-bottom: 1px solid #1c1c1c !important;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
   }
+
   .ant-pro-global-header {
     background: #111111 !important;
     border-bottom: none !important;
@@ -990,6 +962,7 @@ export default {
 
     .ant-pro-global-header-trigger {
       color: rgba(255, 255, 255, 0.85) !important;
+
       &:hover {
         background: rgba(255, 255, 255, 0.06) !important;
       }
@@ -997,6 +970,7 @@ export default {
 
     .action {
       color: rgba(255, 255, 255, 0.85) !important;
+
       &:hover {
         background: rgba(255, 255, 255, 0.06) !important;
       }
@@ -1016,8 +990,10 @@ export default {
 
 /* 手机端：修复footer遮挡菜单的问题 */
 @media (max-width: 768px) {
+
   /* 让drawer body可以滚动，并添加底部padding避免被footer遮挡 */
   .ant-drawer.ant-drawer-open {
+
     /* 确保drawer容器可以正常显示 */
     .ant-drawer-content-wrapper {
       overflow: visible;
@@ -1049,24 +1025,28 @@ export default {
       /* 隐藏滚动条但保持滚动功能 */
       scrollbar-width: thin;
       scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+
       &::-webkit-scrollbar {
         width: 4px;
       }
+
       &::-webkit-scrollbar-track {
         background: transparent;
       }
+
       &::-webkit-scrollbar-thumb {
         background: rgba(255, 255, 255, 0.2);
         border-radius: 2px;
+
         &:hover {
           background: rgba(255, 255, 255, 0.3);
         }
       }
+
       /* 确保菜单内容区域有足够的高度 */
       min-height: 0;
       flex: 1;
     }
   }
 }
-
 </style>

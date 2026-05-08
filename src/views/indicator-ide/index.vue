@@ -25,43 +25,43 @@
               <a-tag v-if="selectedIndicatorIsPurchased" color="purple" size="small">{{ $t('indicatorIde.purchasedReadOnlyTag') }}</a-tag>
             </div>
             <div class="panel-title__trailing">
-            <div class="panel-title-actions" @click.stop>
-              <a-tooltip :title="$t('dashboard.indicator.create')">
-                <a-button size="small" :loading="creatingIndicator" @click="handleCreateIndicator"><a-icon type="plus" /></a-button>
-              </a-tooltip>
-              <a-tooltip :title="selectedIndicatorIsPurchased ? $t('indicatorIde.saveBlockedPurchased') : $t('indicatorIde.save')">
-                <a-button size="small" :disabled="!selectedIndicatorId || !codeDirty || selectedIndicatorIsPurchased" @click="saveIndicator"><a-icon type="save" /></a-button>
-              </a-tooltip>
-              <a-tooltip :title="selectedIndicatorIsPurchased ? $t('indicatorIde.deleteBlockedPurchased') : $t('dashboard.indicator.action.delete')">
-                <a-button
-                  size="small"
-                  :disabled="!selectedIndicatorId || selectedIndicatorIsPurchased"
-                  :loading="deletingIndicator"
-                  @click="handleDeleteIndicator"
-                ><a-icon type="delete" /></a-button>
-              </a-tooltip>
-              <a-tooltip :title="selectedIndicatorIsPurchased ? $t('indicatorIde.publishBlockedPurchased') : $t('dashboard.indicator.action.publish')">
-                <a-button size="small" :disabled="!selectedIndicatorId || selectedIndicatorIsPurchased" @click="handlePublishIndicator"><a-icon type="cloud-upload" /></a-button>
-              </a-tooltip>
-              <a-tooltip :title="$t('dashboard.indicator.action.createStrategy')">
-                <a-button size="small" :disabled="!selectedIndicatorId" @click="handleCreateStrategyFromIndicator"><a-icon type="deployment-unit" /></a-button>
-              </a-tooltip>
-              <a-tooltip :title="$t('indicatorIde.saveAsNew')">
-                <a-button size="small" :disabled="!userId || !currentCode" @click="openSaveAsIndicatorModal"><a-icon type="copy" /></a-button>
-              </a-tooltip>
-              <a-tooltip :title="editorFullscreen ? $t('indicatorIde.exitFullscreen') : $t('indicatorIde.fullscreenEditor')">
-                <a-button size="small" @click="toggleEditorFullscreen"><a-icon :type="editorFullscreen ? 'fullscreen-exit' : 'fullscreen'" /></a-button>
-              </a-tooltip>
-              <a-tooltip :title="chartIndicatorRunning ? $t('indicatorIde.stopIndicatorOnChart') : $t('indicatorIde.runIndicatorOnChart')">
-                <a-button
-                  size="small"
-                  :disabled="chartIndicatorToggleDisabled"
-                  @click="toggleChartIndicatorRun"
-                >
-                  <a-icon :type="chartIndicatorRunning ? 'pause-circle' : 'play-circle'" />
-                </a-button>
-              </a-tooltip>
-            </div>
+              <div class="panel-title-actions" @click.stop>
+                <a-tooltip :title="$t('dashboard.indicator.create')">
+                  <a-button size="small" :loading="creatingIndicator" @click="handleCreateIndicator"><a-icon type="plus" /></a-button>
+                </a-tooltip>
+                <a-tooltip :title="selectedIndicatorIsPurchased ? $t('indicatorIde.saveBlockedPurchased') : $t('indicatorIde.save')">
+                  <a-button size="small" :disabled="!selectedIndicatorId || !codeDirty || selectedIndicatorIsPurchased" @click="saveIndicator"><a-icon type="save" /></a-button>
+                </a-tooltip>
+                <a-tooltip :title="selectedIndicatorIsPurchased ? $t('indicatorIde.deleteBlockedPurchased') : $t('dashboard.indicator.action.delete')">
+                  <a-button
+                    size="small"
+                    :disabled="!selectedIndicatorId || selectedIndicatorIsPurchased"
+                    :loading="deletingIndicator"
+                    @click="handleDeleteIndicator"
+                  ><a-icon type="delete" /></a-button>
+                </a-tooltip>
+                <a-tooltip :title="selectedIndicatorIsPurchased ? $t('indicatorIde.publishBlockedPurchased') : $t('dashboard.indicator.action.publish')">
+                  <a-button size="small" :disabled="!selectedIndicatorId || selectedIndicatorIsPurchased" @click="handlePublishIndicator"><a-icon type="cloud-upload" /></a-button>
+                </a-tooltip>
+                <a-tooltip :title="$t('dashboard.indicator.action.createStrategy')">
+                  <a-button size="small" :disabled="!selectedIndicatorId" @click="handleCreateStrategyFromIndicator"><a-icon type="deployment-unit" /></a-button>
+                </a-tooltip>
+                <a-tooltip :title="$t('indicatorIde.saveAsNew')">
+                  <a-button size="small" :disabled="!userId || !currentCode" @click="openSaveAsIndicatorModal"><a-icon type="copy" /></a-button>
+                </a-tooltip>
+                <a-tooltip :title="editorFullscreen ? $t('indicatorIde.exitFullscreen') : $t('indicatorIde.fullscreenEditor')">
+                  <a-button size="small" @click="toggleEditorFullscreen"><a-icon :type="editorFullscreen ? 'fullscreen-exit' : 'fullscreen'" /></a-button>
+                </a-tooltip>
+                <a-tooltip :title="chartIndicatorRunning ? $t('indicatorIde.stopIndicatorOnChart') : $t('indicatorIde.runIndicatorOnChart')">
+                  <a-button
+                    size="small"
+                    :disabled="chartIndicatorToggleDisabled"
+                    @click="toggleChartIndicatorRun"
+                  >
+                    <a-icon :type="chartIndicatorRunning ? 'pause-circle' : 'play-circle'" />
+                  </a-button>
+                </a-tooltip>
+              </div>
               <a-icon :type="codePanelExpanded ? 'up' : 'down'" class="panel-title-chevron" />
             </div>
           </div>
@@ -213,803 +213,803 @@
         <a-tabs v-model="ideWorkspaceTab" type="card" size="small" class="ide-workspace-tabs ide-workspace-tabs--pill" :animated="false">
           <a-tab-pane key="chart" :tab="$t('indicatorIde.workspaceTabChart')">
             <div class="ide-workspace-pane ide-workspace-pane--chart">
-        <div
-          ref="chartFullscreenEl"
-          class="ide-chart-fs-root"
-          :class="{ 'ide-panel--fullscreen': chartFullscreen }"
-        >
-          <div class="ide-chart-fs-row">
-            <div class="chart-panel">
-              <div class="chart-panel-toolbar">
-                <div class="chart-panel-toolbar-top">
-                  <span class="chart-panel-toolbar-title">{{ $t('indicatorIde.chartWindow') }}</span>
-                  <div class="chart-panel-toolbar-top-actions">
-                    <a-tooltip :title="codeDrawerVisible ? $t('indicatorIde.hideCode') : $t('indicatorIde.showCode')">
-                      <a-button
-                        size="small"
-                        class="chart-panel-icon-btn"
-                        :type="codeDrawerVisible ? 'default' : 'primary'"
-                        @click="codeDrawerVisible = !codeDrawerVisible"
-                      >
-                        <a-icon type="code" />
-                      </a-button>
-                    </a-tooltip>
-                    <a-tooltip placement="bottomLeft">
-                      <template slot="title">
-                        {{ quickTradeDrawerVisible ? $t('indicatorIde.hideQuickTrade') : $t('indicatorIde.showQuickTrade') }}
-                      </template>
-                      <a-button
-                        class="chart-panel-qt-btn"
-                        size="small"
-                        :type="quickTradeDrawerVisible ? 'primary' : 'default'"
-                        @click="toggleQuickTradeDrawer"
-                      >
-                        <a-icon type="thunderbolt" theme="filled" />
-                        <span class="chart-panel-qt-label">{{ $t('quickTrade.title') }}</span>
-                      </a-button>
-                    </a-tooltip>
-                    <a-tooltip :title="chartFullscreen ? $t('indicatorIde.exitFullscreen') : $t('indicatorIde.fullscreenChart')">
-                      <a-button size="small" class="chart-panel-fs-btn" @click="toggleChartFullscreen"><a-icon :type="chartFullscreen ? 'fullscreen-exit' : 'fullscreen'" /></a-button>
-                    </a-tooltip>
-                  </div>
-                </div>
-                <div class="chart-panel-toolbar-controls">
-                  <div class="ide-toolbar-group ide-toolbar-group--watchlist">
-                    <span class="ide-toolbar-label">{{ $t('indicatorIde.toolbar.watchlist') }}</span>
-                    <a-select
-                      v-model="selectedWatchlistKey"
-                      class="ide-toolbar-select ide-toolbar-select--watchlist chart-panel-watchlist-select"
-                      :placeholder="$t('backtest-center.config.watchlistPlaceholder')"
-                      size="small"
-                      show-search
-                      allow-clear
-                      :filter-option="filterWatchlistOption"
-                      :dropdown-class-name="isDarkTheme ? 'ide-watchlist-dropdown ide-watchlist-dropdown--dark' : 'ide-watchlist-dropdown'"
-                      :get-popup-container="chartToolbarGetPopupContainer"
-                      @change="handleWatchlistChange"
-                    >
-                      <a-select-option
-                        v-for="w in watchlist"
-                        :key="`${w.market}:${w.symbol}`"
-                        :value="`${w.market}:${w.symbol}`"
-                      >
-                        <span class="wl-opt-tag" :class="'wl-mkt-' + (w.market || '').toLowerCase()">{{ marketLabel(w.market) }}</span>
-                        <strong class="wl-opt-symbol">{{ w.symbol }}</strong>
-                        <span v-if="w.name" class="wl-opt-name">{{ w.name }}</span>
-                      </a-select-option>
-                      <a-select-option key="__add__" value="__add__" class="add-option">
-                        <div class="ide-watchlist-add-row">
-                          <a-icon type="plus" /> {{ $t('backtest-center.config.addSymbol') }}
-                        </div>
-                      </a-select-option>
-                    </a-select>
-                  </div>
-                  <div class="ide-toolbar-group ide-toolbar-group--tf">
-                    <span class="ide-toolbar-label">{{ $t('indicatorIde.toolbar.timeframe') }}</span>
-                    <a-radio-group
-                      v-model="timeframe"
-                      button-style="solid"
-                      size="small"
-                      class="tf-group ide-tf-seg ide-tf-seg--chart"
-                    >
-                      <a-radio-button value="1m">1m</a-radio-button>
-                      <a-radio-button value="5m">5m</a-radio-button>
-                      <a-radio-button value="15m">15m</a-radio-button>
-                      <a-radio-button value="30m">30m</a-radio-button>
-                      <a-radio-button value="1H">1H</a-radio-button>
-                      <a-radio-button value="4H">4H</a-radio-button>
-                      <a-radio-button value="1D">1D</a-radio-button>
-                      <a-radio-button value="1W">1W</a-radio-button>
-                    </a-radio-group>
-                  </div>
-                  <div class="ide-toolbar-group ide-toolbar-group--indicator">
-                    <span class="ide-toolbar-label">{{ $t('indicatorIde.toolbar.indicator') }}</span>
-                    <a-dropdown
-                      :trigger="['click']"
-                      placement="bottomLeft"
-                      :visible="indicatorDropdownVisible"
-                      :get-popup-container="chartToolbarGetPopupContainer"
-                      @visibleChange="onIndicatorDropdownVisibleChange"
-                      :overlay-class-name="isDarkTheme ? 'ide-indicator-multiselect-dropdown ide-indicator-multiselect-dropdown--dark' : 'ide-indicator-multiselect-dropdown'"
-                    >
-                      <a-button
-                        size="small"
-                        class="ide-toolbar-select ide-toolbar-select--indicator ide-indicator-multiselect-trigger"
-                        :loading="loadingIndicators"
-                      >
-                        <span class="ide-indicator-trigger-text">{{ indicatorToolbarSummary }}</span>
-                        <a-icon type="down" />
-                      </a-button>
-                      <div slot="overlay" class="ide-indicator-overlay" @mousedown.stop @click.stop>
-                        <div class="ide-indicator-overlay-hint">{{ $t('indicatorIde.chartPickHint') }}</div>
-                        <a-spin v-if="loadingIndicators" size="small" style="padding: 12px;" />
-                        <div v-else-if="!indicators.length" class="ide-indicator-overlay-empty">{{ $t('indicatorIde.noIndicatorsYet') }}</div>
-                        <div v-else class="ide-indicator-overlay-list">
-                          <div
-                            v-for="ind in indicators"
-                            :key="'ind-row-' + ind.id"
-                            class="ide-indicator-row"
-                          >
-                            <a-checkbox
-                              :checked="isIndicatorChartVisible(ind.id)"
-                              @change="e => onChartIndicatorCheckChange(ind.id, e.target.checked)"
-                            />
-                            <span
-                              class="ide-indicator-name"
-                              :class="{ active: Number(selectedIndicatorId) === Number(ind.id) }"
-                              @click="selectEditorIndicator(ind.id)"
-                            >{{ ind.name || ('Indicator #' + ind.id) }}</span>
-                            <a-tag
-                              v-if="Number(ind.is_buy) === 1"
-                              color="purple"
-                              class="ide-indicator-purchased-tag"
-                            >{{ $t('indicatorIde.purchasedBadge') }}</a-tag>
-                          </div>
+              <div
+                ref="chartFullscreenEl"
+                class="ide-chart-fs-root"
+                :class="{ 'ide-panel--fullscreen': chartFullscreen }"
+              >
+                <div class="ide-chart-fs-row">
+                  <div class="chart-panel">
+                    <div class="chart-panel-toolbar">
+                      <div class="chart-panel-toolbar-top">
+                        <span class="chart-panel-toolbar-title">{{ $t('indicatorIde.chartWindow') }}</span>
+                        <div class="chart-panel-toolbar-top-actions">
+                          <a-tooltip :title="codeDrawerVisible ? $t('indicatorIde.hideCode') : $t('indicatorIde.showCode')">
+                            <a-button
+                              size="small"
+                              class="chart-panel-icon-btn"
+                              :type="codeDrawerVisible ? 'default' : 'primary'"
+                              @click="codeDrawerVisible = !codeDrawerVisible"
+                            >
+                              <a-icon type="code" />
+                            </a-button>
+                          </a-tooltip>
+                          <a-tooltip placement="bottomLeft">
+                            <template slot="title">
+                              {{ quickTradeDrawerVisible ? $t('indicatorIde.hideQuickTrade') : $t('indicatorIde.showQuickTrade') }}
+                            </template>
+                            <a-button
+                              class="chart-panel-qt-btn"
+                              size="small"
+                              :type="quickTradeDrawerVisible ? 'primary' : 'default'"
+                              @click="toggleQuickTradeDrawer"
+                            >
+                              <a-icon type="thunderbolt" theme="filled" />
+                              <span class="chart-panel-qt-label">{{ $t('quickTrade.title') }}</span>
+                            </a-button>
+                          </a-tooltip>
+                          <a-tooltip :title="chartFullscreen ? $t('indicatorIde.exitFullscreen') : $t('indicatorIde.fullscreenChart')">
+                            <a-button size="small" class="chart-panel-fs-btn" @click="toggleChartFullscreen"><a-icon :type="chartFullscreen ? 'fullscreen-exit' : 'fullscreen'" /></a-button>
+                          </a-tooltip>
                         </div>
                       </div>
-                    </a-dropdown>
+                      <div class="chart-panel-toolbar-controls">
+                        <div class="ide-toolbar-group ide-toolbar-group--watchlist">
+                          <span class="ide-toolbar-label">{{ $t('indicatorIde.toolbar.watchlist') }}</span>
+                          <a-select
+                            v-model="selectedWatchlistKey"
+                            class="ide-toolbar-select ide-toolbar-select--watchlist chart-panel-watchlist-select"
+                            :placeholder="$t('backtest-center.config.watchlistPlaceholder')"
+                            size="small"
+                            show-search
+                            allow-clear
+                            :filter-option="filterWatchlistOption"
+                            :dropdown-class-name="isDarkTheme ? 'ide-watchlist-dropdown ide-watchlist-dropdown--dark' : 'ide-watchlist-dropdown'"
+                            :get-popup-container="chartToolbarGetPopupContainer"
+                            @change="handleWatchlistChange"
+                          >
+                            <a-select-option
+                              v-for="w in watchlist"
+                              :key="`${w.market}:${w.symbol}`"
+                              :value="`${w.market}:${w.symbol}`"
+                            >
+                              <span class="wl-opt-tag" :class="'wl-mkt-' + (w.market || '').toLowerCase()">{{ marketLabel(w.market) }}</span>
+                              <strong class="wl-opt-symbol">{{ w.symbol }}</strong>
+                              <span v-if="w.name" class="wl-opt-name">{{ w.name }}</span>
+                            </a-select-option>
+                            <a-select-option key="__add__" value="__add__" class="add-option">
+                              <div class="ide-watchlist-add-row">
+                                <a-icon type="plus" /> {{ $t('backtest-center.config.addSymbol') }}
+                              </div>
+                            </a-select-option>
+                          </a-select>
+                        </div>
+                        <div class="ide-toolbar-group ide-toolbar-group--tf">
+                          <span class="ide-toolbar-label">{{ $t('indicatorIde.toolbar.timeframe') }}</span>
+                          <a-radio-group
+                            v-model="timeframe"
+                            button-style="solid"
+                            size="small"
+                            class="tf-group ide-tf-seg ide-tf-seg--chart"
+                          >
+                            <a-radio-button value="1m">1m</a-radio-button>
+                            <a-radio-button value="5m">5m</a-radio-button>
+                            <a-radio-button value="15m">15m</a-radio-button>
+                            <a-radio-button value="30m">30m</a-radio-button>
+                            <a-radio-button value="1H">1H</a-radio-button>
+                            <a-radio-button value="4H">4H</a-radio-button>
+                            <a-radio-button value="1D">1D</a-radio-button>
+                            <a-radio-button value="1W">1W</a-radio-button>
+                          </a-radio-group>
+                        </div>
+                        <div class="ide-toolbar-group ide-toolbar-group--indicator">
+                          <span class="ide-toolbar-label">{{ $t('indicatorIde.toolbar.indicator') }}</span>
+                          <a-dropdown
+                            :trigger="['click']"
+                            placement="bottomLeft"
+                            :visible="indicatorDropdownVisible"
+                            :get-popup-container="chartToolbarGetPopupContainer"
+                            @visibleChange="onIndicatorDropdownVisibleChange"
+                            :overlay-class-name="isDarkTheme ? 'ide-indicator-multiselect-dropdown ide-indicator-multiselect-dropdown--dark' : 'ide-indicator-multiselect-dropdown'"
+                          >
+                            <a-button
+                              size="small"
+                              class="ide-toolbar-select ide-toolbar-select--indicator ide-indicator-multiselect-trigger"
+                              :loading="loadingIndicators"
+                            >
+                              <span class="ide-indicator-trigger-text">{{ indicatorToolbarSummary }}</span>
+                              <a-icon type="down" />
+                            </a-button>
+                            <div slot="overlay" class="ide-indicator-overlay" @mousedown.stop @click.stop>
+                              <div class="ide-indicator-overlay-hint">{{ $t('indicatorIde.chartPickHint') }}</div>
+                              <a-spin v-if="loadingIndicators" size="small" style="padding: 12px;" />
+                              <div v-else-if="!indicators.length" class="ide-indicator-overlay-empty">{{ $t('indicatorIde.noIndicatorsYet') }}</div>
+                              <div v-else class="ide-indicator-overlay-list">
+                                <div
+                                  v-for="ind in indicators"
+                                  :key="'ind-row-' + ind.id"
+                                  class="ide-indicator-row"
+                                >
+                                  <a-checkbox
+                                    :checked="isIndicatorChartVisible(ind.id)"
+                                    @change="e => onChartIndicatorCheckChange(ind.id, e.target.checked)"
+                                  />
+                                  <span
+                                    class="ide-indicator-name"
+                                    :class="{ active: Number(selectedIndicatorId) === Number(ind.id) }"
+                                    @click="selectEditorIndicator(ind.id)"
+                                  >{{ ind.name || ('Indicator #' + ind.id) }}</span>
+                                  <a-tag
+                                    v-if="Number(ind.is_buy) === 1"
+                                    color="purple"
+                                    class="ide-indicator-purchased-tag"
+                                  >{{ $t('indicatorIde.purchasedBadge') }}</a-tag>
+                                </div>
+                              </div>
+                            </div>
+                          </a-dropdown>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="chart-panel-inner">
+                      <kline-chart
+                        ref="klineChart"
+                        :symbol="symbol"
+                        :market="market"
+                        :timeframe="timeframe"
+                        :theme="chartTheme"
+                        :activeIndicators="activeIndicators"
+                        :userId="userId"
+                        :realtime-enabled="klineRealtimeEnabled"
+                        @indicator-toggle="handleIndicatorToggle"
+                      />
+                    </div>
+                  </div>
+                  <!-- 闪电交易与图表同在全屏根节点内，避免浏览器全屏层遮挡 -->
+                  <div v-show="quickTradeDrawerVisible" class="ide-quick-right ide-quick-right--chart-fs">
+                    <div class="ide-quick-panel-head">
+                      <span class="ide-quick-panel-head-title">
+                        <a-icon type="thunderbolt" theme="filled" class="ide-quick-panel-head-icon" />
+                        {{ $t('quickTrade.title') }}
+                      </span>
+                      <a-button type="link" size="small" class="ide-quick-panel-close" @click="closeQuickTradeDrawer">
+                        <a-icon type="close" />
+                      </a-button>
+                    </div>
+                    <div class="ide-quick-panel-body">
+                      <quick-trade-panel
+                        key="ide-embedded-qt"
+                        embedded
+                        embedded-ide
+                        :visible="true"
+                        :symbol="qtSymbol"
+                        :preset-side="qtSide"
+                        :preset-price="qtPrice"
+                        source="indicator"
+                        market-type="swap"
+                        :overlay-get-container="ideQtOverlayGetContainer"
+                        @order-success="onQuickTradeSuccess"
+                        @update:symbol="handleQuickTradeSymbolChange"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
-              <div class="chart-panel-inner">
-                <kline-chart
-                  ref="klineChart"
-                  :symbol="symbol"
-                  :market="market"
-                  :timeframe="timeframe"
-                  :theme="chartTheme"
-                  :activeIndicators="activeIndicators"
-                  :userId="userId"
-                  :realtime-enabled="klineRealtimeEnabled"
-                  @indicator-toggle="handleIndicatorToggle"
-                />
-              </div>
-            </div>
-            <!-- 闪电交易与图表同在全屏根节点内，避免浏览器全屏层遮挡 -->
-            <div v-show="quickTradeDrawerVisible" class="ide-quick-right ide-quick-right--chart-fs">
-              <div class="ide-quick-panel-head">
-                <span class="ide-quick-panel-head-title">
-                  <a-icon type="thunderbolt" theme="filled" class="ide-quick-panel-head-icon" />
-                  {{ $t('quickTrade.title') }}
-                </span>
-                <a-button type="link" size="small" class="ide-quick-panel-close" @click="closeQuickTradeDrawer">
-                  <a-icon type="close" />
-                </a-button>
-              </div>
-              <div class="ide-quick-panel-body">
-                <quick-trade-panel
-                  key="ide-embedded-qt"
-                  embedded
-                  embedded-ide
-                  :visible="true"
-                  :symbol="qtSymbol"
-                  :preset-side="qtSide"
-                  :preset-price="qtPrice"
-                  source="indicator"
-                  market-type="swap"
-                  :overlay-get-container="ideQtOverlayGetContainer"
-                  @order-success="onQuickTradeSuccess"
-                  @update:symbol="handleQuickTradeSymbolChange"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
             </div>
           </a-tab-pane>
           <a-tab-pane key="backtest" :tab="$t('indicatorIde.workspaceTabBacktest')">
             <!-- 独立滚动层：Ant Tabs 的 tabpane 默认高度链不完整，仅靠 height:100% 会导致子级无法出现滚动条 -->
             <div class="ide-backtest-scroll-mount">
-            <div class="ide-workspace-pane ide-workspace-pane--backtest">
-        <div class="result-panel">
-          <div class="params-card">
-            <div class="params-card-header" @click="paramsPanelExpanded = !paramsPanelExpanded">
-              <div class="params-card-title">
-                <a-icon type="control" />
-                <span>{{ $t('indicatorIde.backtestParameters') }}</span>
-              </div>
-              <div class="params-card-actions" @click.stop>
-                <a-tooltip :title="$t('indicatorIde.history')">
-                  <a-button
-                    size="small"
-                    :disabled="!selectedIndicatorId"
-                    @click="showHistoryDrawer = true; historyIndicatorId = selectedIndicatorId"
-                  >
-                    <a-icon type="history" />
-                  </a-button>
-                </a-tooltip>
-                <a-button
-                  type="primary"
-                  size="small"
-                  :loading="running"
-                  :disabled="!canRunBacktest"
-                  @click="runBacktest"
-                >
-                  <a-icon v-if="!running" type="thunderbolt" />
-                  {{ $t('indicatorIde.runBacktest') }}
-                </a-button>
-                <a-icon :type="paramsPanelExpanded ? 'up' : 'down'" @click="paramsPanelExpanded = !paramsPanelExpanded" />
-              </div>
-            </div>
-            <div v-show="paramsPanelExpanded" class="params-scroll params-scroll--right">
-              <!-- 上三下一：三列等宽等高 + 下方全宽风控，避免 auto-fit 网格在缩窗时行高失控 -->
-              <div class="params-layout">
-                <div class="params-row-three">
-                  <div class="param-section param-section--top">
-                  <div class="param-label">{{ $t('indicatorIde.dateRange') }}</div>
-                  <div class="date-presets">
-                    <a-button
-                      v-for="p in filteredDatePresets"
-                      :key="p.key"
-                      size="small"
-                      :type="datePreset === p.key ? 'primary' : 'default'"
-                      @click="applyDatePreset(p)"
-                    >{{ p.label }}</a-button>
-                  </div>
-                  <a-row :gutter="8" style="margin-top: 6px;">
-                    <a-col :span="12">
-                      <a-date-picker v-model="startDate" :placeholder="$t('indicatorIde.start')" style="width: 100%" size="small" />
-                    </a-col>
-                    <a-col :span="12">
-                      <a-date-picker v-model="endDate" :placeholder="$t('indicatorIde.end')" style="width: 100%" size="small" />
-                    </a-col>
-                  </a-row>
-                  </div>
-
-                  <div class="param-section param-section--top">
-                  <div class="param-label">{{ $t('indicatorIde.capital') }}</div>
-                  <a-row :gutter="8">
-                    <a-col :span="12">
-                      <div class="field-label">{{ $t('indicatorIde.initialCapital') }}</div>
-                      <a-input-number
-                        v-model="initialCapital"
-                        :min="1000"
-                        :step="10000"
-                        :precision="2"
-                        size="small"
-                        style="width: 100%"
-                        :formatter="v => `$ ${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')"
-                        :parser="v => v.replace(/\$\s?|(,*)/g, '')"
-                      />
-                    </a-col>
-                    <a-col :span="12">
-                      <div class="field-label">{{ $t('indicatorIde.leverage') }}</div>
-                      <a-input-number
-                        v-model="leverage"
-                        :min="1"
-                        :max="125"
-                        :step="1"
-                        :precision="0"
-                        size="small"
-                        style="width: 100%"
-                        :formatter="v => `${v}x`"
-                        :parser="v => v.replace('x', '')"
-                      />
-                    </a-col>
-                  </a-row>
-                  <a-row :gutter="8" style="margin-top: 6px;">
-                    <a-col :span="12">
-                      <div class="field-label">{{ $t('indicatorIde.commission') }}</div>
-                      <a-input-number
-                        v-model="commission"
-                        :min="0"
-                        :max="10"
-                        :step="0.01"
-                        :precision="4"
-                        size="small"
-                        style="width: 100%"
-                      />
-                    </a-col>
-                    <a-col :span="12">
-                      <div class="field-label">{{ $t('indicatorIde.slippage') }}</div>
-                      <a-input-number
-                        v-model="slippage"
-                        :min="0"
-                        :max="10"
-                        :step="0.01"
-                        :precision="4"
-                        size="small"
-                        style="width: 100%"
-                      />
-                    </a-col>
-                  </a-row>
-                  </div>
-
-                  <div class="param-section param-section--top">
-                    <div class="param-label">{{ $t('indicatorIde.direction') }}</div>
-                    <a-radio-group v-model="tradeDirection" class="direction-radio-group">
-                      <a-radio-button value="long">
-                        <a-icon type="arrow-up" /> {{ $t('indicatorIde.long') }}
-                      </a-radio-button>
-                      <a-radio-button value="short">
-                        <a-icon type="arrow-down" /> {{ $t('indicatorIde.short') }}
-                      </a-radio-button>
-                      <a-radio-button value="both">
-                        <a-icon type="swap" /> {{ $t('indicatorIde.both') }}
-                      </a-radio-button>
-                    </a-radio-group>
-                    <div style="margin-top: 8px;">
-                      <a-tooltip :title="$t('indicatorIde.mtfHint')">
-                        <a-checkbox v-model="enableMtf">{{ $t('indicatorIde.highPrecisionMtf') }}</a-checkbox>
-                      </a-tooltip>
+              <div class="ide-workspace-pane ide-workspace-pane--backtest">
+                <div class="result-panel">
+                  <div class="params-card">
+                    <div class="params-card-header" @click="paramsPanelExpanded = !paramsPanelExpanded">
+                      <div class="params-card-title">
+                        <a-icon type="control" />
+                        <span>{{ $t('indicatorIde.backtestParameters') }}</span>
+                      </div>
+                      <div class="params-card-actions" @click.stop>
+                        <a-tooltip :title="$t('indicatorIde.history')">
+                          <a-button
+                            size="small"
+                            :disabled="!selectedIndicatorId"
+                            @click="showHistoryDrawer = true; historyIndicatorId = selectedIndicatorId"
+                          >
+                            <a-icon type="history" />
+                          </a-button>
+                        </a-tooltip>
+                        <a-button
+                          type="primary"
+                          size="small"
+                          :loading="running"
+                          :disabled="!canRunBacktest"
+                          @click="runBacktest"
+                        >
+                          <a-icon v-if="!running" type="thunderbolt" />
+                          {{ $t('indicatorIde.runBacktest') }}
+                        </a-button>
+                        <a-icon :type="paramsPanelExpanded ? 'up' : 'down'" @click="paramsPanelExpanded = !paramsPanelExpanded" />
+                      </div>
                     </div>
-                  </div>
-                </div>
+                    <div v-show="paramsPanelExpanded" class="params-scroll params-scroll--right">
+                      <!-- 上三下一：三列等宽等高 + 下方全宽风控，避免 auto-fit 网格在缩窗时行高失控 -->
+                      <div class="params-layout">
+                        <div class="params-row-three">
+                          <div class="param-section param-section--top">
+                            <div class="param-label">{{ $t('indicatorIde.dateRange') }}</div>
+                            <div class="date-presets">
+                              <a-button
+                                v-for="p in filteredDatePresets"
+                                :key="p.key"
+                                size="small"
+                                :type="datePreset === p.key ? 'primary' : 'default'"
+                                @click="applyDatePreset(p)"
+                              >{{ p.label }}</a-button>
+                            </div>
+                            <a-row :gutter="8" style="margin-top: 6px;">
+                              <a-col :span="12">
+                                <a-date-picker v-model="startDate" :placeholder="$t('indicatorIde.start')" style="width: 100%" size="small" />
+                              </a-col>
+                              <a-col :span="12">
+                                <a-date-picker v-model="endDate" :placeholder="$t('indicatorIde.end')" style="width: 100%" size="small" />
+                              </a-col>
+                            </a-row>
+                          </div>
 
-                <div
-                  v-if="!strategyDirectivesAlertDismissed || strategyDirectivesSummary.length"
-                  class="params-row-full"
-                >
-                  <div class="param-section strategy-directives-card">
-                    <a-alert
-                      v-if="!strategyDirectivesAlertDismissed"
-                      type="info"
-                      show-icon
-                      closable
-                      class="strategy-directives-alert"
-                      @close="dismissStrategyDirectivesAlert"
-                    >
-                    <template slot="message">{{ $t('indicatorIde.strategyDirectives.alertTitle') }}</template>
-                    <template slot="description">
-                      <div>{{ $t('indicatorIde.strategyDirectives.alertDesc') }}</div>
-                      <a class="strategy-directives-doc-link" @click.prevent="openStrategyDirectivesDocs">
-                        {{ $t('indicatorIde.strategyDirectives.viewDocs') }}
-                      </a>
-                    </template>
-                    </a-alert>
+                          <div class="param-section param-section--top">
+                            <div class="param-label">{{ $t('indicatorIde.capital') }}</div>
+                            <a-row :gutter="8">
+                              <a-col :span="12">
+                                <div class="field-label">{{ $t('indicatorIde.initialCapital') }}</div>
+                                <a-input-number
+                                  v-model="initialCapital"
+                                  :min="1000"
+                                  :step="10000"
+                                  :precision="2"
+                                  size="small"
+                                  style="width: 100%"
+                                  :formatter="v => `$ ${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')"
+                                  :parser="v => v.replace(/\$\s?|(,*)/g, '')"
+                                />
+                              </a-col>
+                              <a-col :span="12">
+                                <div class="field-label">{{ $t('indicatorIde.leverage') }}</div>
+                                <a-input-number
+                                  v-model="leverage"
+                                  :min="1"
+                                  :max="125"
+                                  :step="1"
+                                  :precision="0"
+                                  size="small"
+                                  style="width: 100%"
+                                  :formatter="v => `${v}x`"
+                                  :parser="v => v.replace('x', '')"
+                                />
+                              </a-col>
+                            </a-row>
+                            <a-row :gutter="8" style="margin-top: 6px;">
+                              <a-col :span="12">
+                                <div class="field-label">{{ $t('indicatorIde.commission') }}</div>
+                                <a-input-number
+                                  v-model="commission"
+                                  :min="0"
+                                  :max="10"
+                                  :step="0.01"
+                                  :precision="4"
+                                  size="small"
+                                  style="width: 100%"
+                                />
+                              </a-col>
+                              <a-col :span="12">
+                                <div class="field-label">{{ $t('indicatorIde.slippage') }}</div>
+                                <a-input-number
+                                  v-model="slippage"
+                                  :min="0"
+                                  :max="10"
+                                  :step="0.01"
+                                  :precision="4"
+                                  size="small"
+                                  style="width: 100%"
+                                />
+                              </a-col>
+                            </a-row>
+                          </div>
 
-                    <div class="strategy-directives-header">
-                      <span class="param-label" style="margin: 0;">
-                        <a-icon type="lock" /> {{ $t('indicatorIde.strategyDirectives.title') }}
-                      </span>
-                      <a-tooltip :title="$t('indicatorIde.strategyDirectives.editHint')">
-                        <a class="strategy-directives-jump" @click="jumpToStrategyDirectiveLine()">
-                          <a-icon type="edit" /> {{ $t('indicatorIde.strategyDirectives.editAction') }}
-                        </a>
-                      </a-tooltip>
-                    </div>
+                          <div class="param-section param-section--top">
+                            <div class="param-label">{{ $t('indicatorIde.direction') }}</div>
+                            <a-radio-group v-model="tradeDirection" class="direction-radio-group">
+                              <a-radio-button value="long">
+                                <a-icon type="arrow-up" /> {{ $t('indicatorIde.long') }}
+                              </a-radio-button>
+                              <a-radio-button value="short">
+                                <a-icon type="arrow-down" /> {{ $t('indicatorIde.short') }}
+                              </a-radio-button>
+                              <a-radio-button value="both">
+                                <a-icon type="swap" /> {{ $t('indicatorIde.both') }}
+                              </a-radio-button>
+                            </a-radio-group>
+                            <div style="margin-top: 8px;">
+                              <a-tooltip :title="$t('indicatorIde.mtfHint')">
+                                <a-checkbox v-model="enableMtf">{{ $t('indicatorIde.highPrecisionMtf') }}</a-checkbox>
+                              </a-tooltip>
+                            </div>
+                          </div>
+                        </div>
 
-                    <div v-if="!strategyDirectivesSummary.length" class="strategy-directives-empty">
-                      {{ $t('indicatorIde.strategyDirectives.empty') }}
-                    </div>
-                    <div v-else class="strategy-directives-list">
-                      <div
-                        v-for="item in strategyDirectivesSummary"
-                        :key="item.key"
-                        class="strategy-directive-row"
-                        :class="{ 'is-set': item.isSet }"
-                        @click="jumpToStrategyDirectiveLine(item.key)"
-                      >
-                        <span class="strategy-directive-label">{{ item.label }}</span>
-                        <span class="strategy-directive-value" :class="{ 'is-empty': !item.isSet }">{{ item.display }}</span>
+                        <div
+                          v-if="!strategyDirectivesAlertDismissed || strategyDirectivesSummary.length"
+                          class="params-row-full"
+                        >
+                          <div class="param-section strategy-directives-card">
+                            <a-alert
+                              v-if="!strategyDirectivesAlertDismissed"
+                              type="info"
+                              show-icon
+                              closable
+                              class="strategy-directives-alert"
+                              @close="dismissStrategyDirectivesAlert"
+                            >
+                              <template slot="message">{{ $t('indicatorIde.strategyDirectives.alertTitle') }}</template>
+                              <template slot="description">
+                                <div>{{ $t('indicatorIde.strategyDirectives.alertDesc') }}</div>
+                                <a class="strategy-directives-doc-link" @click.prevent="openStrategyDirectivesDocs">
+                                  {{ $t('indicatorIde.strategyDirectives.viewDocs') }}
+                                </a>
+                              </template>
+                            </a-alert>
+
+                            <div class="strategy-directives-header">
+                              <span class="param-label" style="margin: 0;">
+                                <a-icon type="lock" /> {{ $t('indicatorIde.strategyDirectives.title') }}
+                              </span>
+                              <a-tooltip :title="$t('indicatorIde.strategyDirectives.editHint')">
+                                <a class="strategy-directives-jump" @click="jumpToStrategyDirectiveLine()">
+                                  <a-icon type="edit" /> {{ $t('indicatorIde.strategyDirectives.editAction') }}
+                                </a>
+                              </a-tooltip>
+                            </div>
+
+                            <div v-if="!strategyDirectivesSummary.length" class="strategy-directives-empty">
+                              {{ $t('indicatorIde.strategyDirectives.empty') }}
+                            </div>
+                            <div v-else class="strategy-directives-list">
+                              <div
+                                v-for="item in strategyDirectivesSummary"
+                                :key="item.key"
+                                class="strategy-directive-row"
+                                :class="{ 'is-set': item.isSet }"
+                                @click="jumpToStrategyDirectiveLine(item.key)"
+                              >
+                                <span class="strategy-directive-label">{{ item.label }}</span>
+                                <span class="strategy-directive-value" :class="{ 'is-empty': !item.isSet }">{{ item.display }}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <a-tabs v-model="resultTab" size="small" class="result-tabs" :animated="false">
-            <a-tab-pane key="backtest" :tab="$t('indicatorIde.backtestResults')">
-              <!-- Running state -->
-              <div v-if="running" class="result-running">
-                <a-spin size="large" />
-                <div class="running-time">{{ fmtElapsed(elapsedSec) }}</div>
-                <div class="running-tip">{{ $t('indicatorIde.runningBacktest') }}</div>
-              </div>
-
-              <!-- Empty state -->
-              <div v-else-if="!hasResult" class="result-empty">
-                <a-icon type="bar-chart" style="font-size: 48px; color: #d9d9d9;" />
-                <p>{{ $t('indicatorIde.emptyHint') }}</p>
-              </div>
-
-              <!-- Results -->
-              <div v-else class="result-data">
-                <!-- Metric cards -->
-                <div class="metrics-grid">
-                  <div v-for="m in metricCards" :key="m.label" :class="['metric-card', m.cls]">
-                    <div class="metric-label">{{ m.label }}</div>
-                    <div class="metric-value">{{ m.value }}</div>
-                  </div>
-                </div>
-
-                <!-- Equity curve -->
-                <div class="eq-section">
-                  <div class="eq-title">
-                    <a-icon type="area-chart" style="margin-right: 6px;" />
-                    {{ $t('indicatorIde.equityCurve') }}
-                  </div>
-                  <div ref="eqChart" class="equity-chart"></div>
-                </div>
-
-                <!-- Trade table -->
-                <div class="trades-section">
-                  <div class="trades-title">
-                    <a-icon type="swap" style="margin-right: 6px;" />
-                    {{ $t('indicatorIde.trades') }}
-                    <span class="trades-count">({{ pairedTrades.length }})</span>
-                  </div>
-                  <a-table
-                    :columns="tradeColumns"
-                    :dataSource="pairedTrades"
-                    :pagination="{ pageSize: 8, size: 'small' }"
-                    size="small"
-                    :scroll="{ x: 820 }"
-                    rowKey="id"
-                  >
-                    <template slot="type" slot-scope="text">
-                      <a-tag :color="text === 'long' ? 'green' : 'red'" style="margin: 0;">{{ text.toUpperCase() }}</a-tag>
-                    </template>
-                    <template slot="exitTag" slot-scope="text, record">
-                      <a-tag
-                        v-if="record"
-                        :color="exitTagColor(record)"
-                        style="margin: 0;"
-                      >{{ exitTagLabel(record) }}</a-tag>
-                    </template>
-                    <template slot="price" slot-scope="text">
-                      <span style="font-variant-numeric: tabular-nums;">{{ fmtPrice(text) }}</span>
-                    </template>
-                    <template slot="profit" slot-scope="text">
-                      <span :style="{ color: text > 0 ? '#52c41a' : text < 0 ? '#f5222d' : '#666', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }">{{ fmtMoney(text) }}</span>
-                    </template>
-                    <template slot="money" slot-scope="text">
-                      <span style="font-weight: 600; font-variant-numeric: tabular-nums;">{{ fmtMoney(text) }}</span>
-                    </template>
-                  </a-table>
-                </div>
-
-                <!-- AI Optimize CTA -->
-                <div v-if="hasResult && !running" class="ai-optimize-card">
-                  <div class="ai-optimize-card-inner">
-                    <div class="ai-optimize-card-icon">
-                      <a-icon type="experiment" />
-                    </div>
-                    <div class="ai-optimize-card-body">
-                      <div class="ai-optimize-card-title">{{ $t('indicatorIde.aiOptimize') }}</div>
-                      <div class="ai-optimize-card-desc">{{ $t('indicatorIde.aiOptimizeHint') }}</div>
-                    </div>
-                    <a-button
-                      type="primary"
-                      size="small"
-                      :loading="aiOptimizing"
-                      @click="handleAIOptimize"
-                    >
-                      <a-icon v-if="!aiOptimizing" type="thunderbolt" />
-                      {{ $t('indicatorIde.aiOptimize') }}
-                    </a-button>
-                  </div>
-                </div>
-              </div>
-            </a-tab-pane>
-
-            <a-tab-pane key="aisystem" :tab="$t('indicatorIde.aiExperimentTab')">
-              <div v-if="!experimentRunning" class="ide-tuning-launch">
-                <div class="ide-tuning-launch-header">
-                  <div class="ide-tuning-launch-icon"><a-icon type="experiment" /></div>
-                  <div>
-                    <div class="ide-tuning-launch-title">{{ $t('indicatorIde.tuningLaunchTitle') }}</div>
-                    <div class="ide-tuning-launch-subtitle">{{ $t('indicatorIde.tuningLaunchDesc') }}</div>
-                  </div>
-                </div>
-
-                <div class="ide-tuning-method-cards">
-                  <div class="ide-tuning-method-card">
-                    <div class="ide-tuning-method-card-head">
-                      <a-icon type="deployment-unit" class="ide-tuning-method-icon ide-tuning-method-icon--grid" />
-                      <span class="ide-tuning-method-name">{{ $t('indicatorIde.runStructuredTune') }}</span>
-                    </div>
-                    <div class="ide-tuning-method-desc">{{ $t('indicatorIde.structuredTuneExplain') }}</div>
-                    <div class="ide-tuning-method-actions">
-                      <a-radio-group v-model="structuredTuneMethod" size="small">
-                        <a-radio-button value="grid">{{ $t('indicatorIde.structuredTuneGrid') }}</a-radio-button>
-                        <a-radio-button value="random">{{ $t('indicatorIde.structuredTuneRandom') }}</a-radio-button>
-                      </a-radio-group>
-                      <a-button
-                        size="small"
-                        :loading="experimentRunning && experimentRunKind === 'structured'"
-                        :disabled="experimentRunning"
-                        @click="handleRunStructuredTune"
-                      >
-                        <a-icon type="play-circle" />
-                        {{ $t('indicatorIde.runTune') }}
-                      </a-button>
-                    </div>
-                  </div>
-
-                  <div class="ide-tuning-method-card ide-tuning-method-card--ai">
-                    <div class="ide-tuning-method-card-head">
-                      <a-icon type="robot" class="ide-tuning-method-icon ide-tuning-method-icon--ai" />
-                      <span class="ide-tuning-method-name">{{ $t('indicatorIde.runAiExperiment') }}</span>
-                      <a-tag color="blue" size="small" style="margin-left: auto;">AI</a-tag>
-                    </div>
-                    <div class="ide-tuning-method-desc">{{ $t('indicatorIde.aiTuneExplain') }}</div>
-                    <div class="ide-tuning-method-actions">
-                      <a-button
-                        type="primary"
-                        size="small"
-                        :loading="experimentRunning && experimentRunKind === 'llm'"
-                        :disabled="experimentRunning"
-                        @click="handleRunAIExperiment"
-                      >
-                        <a-icon type="thunderbolt" />
-                        {{ $t('indicatorIde.runTune') }}
-                      </a-button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Running state with real-time progress -->
-              <div v-if="experimentRunning" class="experiment-panel">
-                <div class="experiment-progress-bar">
-                  <div class="experiment-progress-header">
-                    <a-spin size="small" />
-                    <span v-if="experimentRunKind === 'structured'">{{ $t('indicatorIde.structuredTuneRunning') }}</span>
-                    <span v-else>
-                      {{ $t('indicatorIde.aiOptimizing') }}
-                      <template v-if="experimentCurrentRound > 0">
-                        &mdash; {{ $t('indicatorIde.round') }} {{ experimentCurrentRound }}/{{ experimentMaxRounds }}
-                      </template>
-                    </span>
-                    <span class="running-time">{{ fmtElapsed(elapsedSec) }}</span>
-                  </div>
-                  <div v-if="experimentRunKind === 'llm' && experimentLiveHint" class="experiment-live-hint">{{ experimentLiveHint }}</div>
-                  <a-progress
-                    v-if="experimentRunKind === 'structured'"
-                    :percent="35"
-                    status="active"
-                    :show-info="false"
-                    size="small"
-                    strokeColor="#1890ff"
-                  />
-                  <a-progress
-                    v-else
-                    :percent="experimentProgressPct"
-                    status="active"
-                    :show-info="false"
-                    size="small"
-                    strokeColor="#1890ff"
-                  />
-                  <div v-if="experimentRoundScores.length" class="experiment-round-scores">
-                    <span v-for="(rs, idx) in experimentRoundScores" :key="idx" class="experiment-round-badge" :class="{ best: rs === experimentGlobalBestScoreLive }">
-                      R{{ idx + 1 }}: {{ rs.toFixed(1) }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Empty state -->
-              <div v-else-if="!hasExperimentResult" class="result-empty">
-                <a-icon type="experiment" style="font-size: 48px; color: #d9d9d9;" />
-                <p>{{ $t('indicatorIde.aiExperimentEmpty') }}</p>
-              </div>
-
-              <!-- Results -->
-              <div v-else class="experiment-panel">
-                <!-- Round progress indicators -->
-                <div class="experiment-round-row">
-                  <div v-for="(rd, idx) in experimentRoundsInfo" :key="idx" class="experiment-round-card" :class="{ best: rd.globalBestScore === rd.bestScore && rd.bestScore > 0 }">
-                    <div class="experiment-round-num">R{{ rd.round }}</div>
-                    <div class="experiment-round-detail">
-                      <div class="experiment-round-score">{{ rd.bestScore.toFixed(1) }}</div>
-                      <div class="experiment-round-meta">{{ rd.candidateCount }} {{ $t('indicatorIde.candidates') }} &middot; {{ rd.elapsed }}s</div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Action bar -->
-                <div class="experiment-action-bar experiment-action-bar--split">
-                  <a-button size="small" @click="handleRunAIExperiment">
-                    <a-icon type="experiment" /> {{ $t('indicatorIde.rerunAiTuning') }}
-                  </a-button>
-                  <a-button size="small" @click="handleRunStructuredTune">
-                    <a-icon type="deployment-unit" /> {{ $t('indicatorIde.rerunStructuredTuning') }}
-                  </a-button>
-                  <a-button size="small" type="primary" @click="applyBestExperimentCandidate">
-                    <a-icon type="check" /> {{ $t('indicatorIde.applyBestParams') }}
-                  </a-button>
-                </div>
-
-                <!-- Hero: regime + best score -->
-                <div class="experiment-hero">
-                  <div class="experiment-hero-main">
-                    <div class="experiment-kicker">{{ $t('indicatorIde.marketRegime') }}</div>
-                    <div class="experiment-regime-title">
-                      {{ experimentRegimeLabel }}
-                      <a-tag color="blue">{{ experimentRegimeConfidence }}</a-tag>
-                    </div>
-                    <div class="experiment-hint">{{ experimentPromptHint }}</div>
-                    <div class="experiment-family-tags">
-                      <a-tag v-for="family in experimentPreferredFamilies" :key="family.key" color="purple">{{ family.label }}</a-tag>
-                    </div>
-                  </div>
-                  <div class="experiment-best-score">
-                    <div class="experiment-kicker">{{ $t('indicatorIde.bestStrategyOutput') }}</div>
-                    <div class="experiment-score">{{ experimentBestScore }}</div>
-                    <div class="experiment-grade">{{ experimentBestGrade }}</div>
-                  </div>
-                </div>
-
-                <!-- Best candidate card -->
-                <div v-if="experimentBest" class="experiment-best-card">
-                  <div class="experiment-section-title">
-                    <a-icon type="trophy" style="margin-right: 6px;" />
-                    {{ $t('indicatorIde.bestStrategyOutput') }}
-                    <span v-if="experimentBest.name" style="font-weight: 400; margin-left: 8px; font-size: 12px; opacity: 0.65;">{{ experimentBest.name }}</span>
-                  </div>
-                  <div v-if="experimentBest.reasoning" class="experiment-reasoning">{{ experimentBest.reasoning }}</div>
-                  <div class="experiment-best-summary">
-                    <div class="experiment-best-metric">
-                      <span>{{ $t('indicatorIde.totalReturn') }}</span>
-                      <strong>{{ experimentBestSummary.totalReturn }}</strong>
-                    </div>
-                    <div class="experiment-best-metric">
-                      <span>{{ $t('indicatorIde.maxDrawdown') }}</span>
-                      <strong>{{ experimentBestSummary.maxDrawdown }}</strong>
-                    </div>
-                    <div class="experiment-best-metric">
-                      <span>{{ $t('indicatorIde.sharpeRatio') }}</span>
-                      <strong>{{ experimentBestSummary.sharpeRatio }}</strong>
-                    </div>
-                    <div class="experiment-best-metric">
-                      <span>{{ $t('indicatorIde.tradeCount') }}</span>
-                      <strong>{{ experimentBestSummary.totalTrades }}</strong>
-                    </div>
-                  </div>
-                  <div class="experiment-best-actions">
-                    <a-button type="primary" size="small" @click="applyBestExperimentCandidate">
-                      <a-icon type="check" /> {{ $t('indicatorIde.applyBestParams') }}
-                    </a-button>
-                  </div>
-                </div>
-
-                <!-- Top candidates -->
-                <div class="experiment-candidate-grid">
-                  <div
-                    v-for="candidate in experimentCandidateCards"
-                    :key="candidate.name"
-                    class="experiment-candidate-card"
-                    :class="{ active: experimentSelectedCandidate && experimentSelectedCandidate.name === candidate.name }"
-                    @click="selectExperimentCandidate(candidate)"
-                  >
-                    <div class="experiment-candidate-header">
-                      <div>
-                        <div class="experiment-candidate-name">{{ candidate.name }}</div>
-                        <div class="experiment-candidate-source">{{ formatExperimentSource(candidate.source) }}</div>
+                  <a-tabs v-model="resultTab" size="small" class="result-tabs" :animated="false">
+                    <a-tab-pane key="backtest" :tab="$t('indicatorIde.backtestResults')">
+                      <!-- Running state -->
+                      <div v-if="running" class="result-running">
+                        <a-spin size="large" />
+                        <div class="running-time">{{ fmtElapsed(elapsedSec) }}</div>
+                        <div class="running-tip">{{ $t('indicatorIde.runningBacktest') }}</div>
                       </div>
-                      <a-tag color="blue">{{ ((candidate.score || {}).grade || 'C') }}</a-tag>
-                    </div>
-                    <div class="experiment-candidate-score">{{ (((candidate.score || {}).overallScore || 0)).toFixed(2) }}</div>
-                    <div v-if="candidate.reasoning" class="experiment-candidate-reasoning">{{ candidate.reasoning }}</div>
-                    <div class="experiment-candidate-stats">
-                      <span>{{ $t('indicatorIde.totalReturn') }} {{ fmtPct((candidate.result || {}).totalReturn) }}</span>
-                      <span>{{ $t('indicatorIde.sharpeRatio') }} {{ (((candidate.result || {}).sharpeRatio || 0)).toFixed(2) }}</span>
-                    </div>
-                  </div>
-                </div>
 
-                <!-- Selected candidate detail -->
-                <div v-if="experimentSelectedCandidate" class="experiment-detail-card">
-                  <div class="experiment-detail-header">
-                    <div>
-                      <div class="experiment-section-title">{{ experimentSelectedCandidate.name }}</div>
-                      <div class="experiment-detail-source">{{ formatExperimentSource(experimentSelectedCandidate.source) }}</div>
-                      <div v-if="experimentSelectedCandidate.reasoning" class="experiment-reasoning">{{ experimentSelectedCandidate.reasoning }}</div>
-                    </div>
-                    <div class="experiment-detail-actions">
-                      <a-button size="small" @click="applyExperimentCandidate(experimentSelectedCandidate)">
-                        <a-icon type="check" /> {{ $t('indicatorIde.applyThisCandidate') }}
-                      </a-button>
-                      <a-button size="small" type="primary" @click="runBacktestWithExperimentCandidate(experimentSelectedCandidate)">
-                        <a-icon type="thunderbolt" /> {{ $t('indicatorIde.backtestThisCandidate') }}
-                      </a-button>
-                    </div>
-                  </div>
-                  <div class="experiment-detail-metrics">
-                    <div v-for="item in experimentSelectedSummary" :key="item.label" class="experiment-detail-metric">
-                      <span>{{ item.label }}</span>
-                      <strong>{{ item.value }}</strong>
-                    </div>
-                  </div>
-                  <div v-if="experimentSelectedChangedEntries.length" class="experiment-detail-block">
-                    <div class="experiment-detail-block-title">{{ $t('indicatorIde.tuningChangesTitle') }}</div>
-                    <div class="experiment-detail-block-hint">{{ $t('indicatorIde.tuningChangesHint') }}</div>
-                    <div class="experiment-change-list">
-                      <div v-for="item in experimentSelectedChangedEntries" :key="item.key" class="experiment-change-item">
-                        <span class="experiment-change-name">{{ item.label }}</span>
-                        <span class="experiment-change-values">
-                          <span class="experiment-change-before">{{ item.fromLabel }}</span>
-                          <span class="experiment-change-arrow">→</span>
-                          <span class="experiment-change-after">{{ item.toLabel }}</span>
-                        </span>
+                      <!-- Empty state -->
+                      <div v-else-if="!hasResult" class="result-empty">
+                        <a-icon type="bar-chart" style="font-size: 48px; color: #d9d9d9;" />
+                        <p>{{ $t('indicatorIde.emptyHint') }}</p>
                       </div>
-                    </div>
-                  </div>
-                  <div v-else-if="experimentSelectedChangeEntries.length" class="experiment-detail-block">
-                    <div class="experiment-detail-block-title">{{ $t('indicatorIde.tuningChangesTitle') }}</div>
-                    <div class="experiment-detail-block-hint">{{ $t('indicatorIde.tuningChangesAlreadyApplied') }}</div>
-                  </div>
-                  <div v-if="experimentSelectedScoreComponents.length" class="experiment-detail-block">
-                    <div class="experiment-detail-block-title">{{ $t('indicatorIde.scoreBreakdown') }}</div>
-                    <div class="experiment-component-grid">
-                      <div v-for="item in experimentSelectedScoreComponents" :key="item.key" class="experiment-component-card">
-                        <span>{{ item.label }}</span>
-                        <strong>{{ item.value }}</strong>
-                      </div>
-                    </div>
-                  </div>
-                </div>
 
-                <!-- Ranking table -->
-                <div class="experiment-ranking-card">
-                  <div class="experiment-section-title">
-                    <a-icon type="ordered-list" style="margin-right: 6px;" />
-                    {{ $t('indicatorIde.strategyRanking') }}
-                  </div>
-                  <a-table
-                    :columns="experimentColumns"
-                    :dataSource="experimentRankedStrategies"
-                    :pagination="{ pageSize: 5, size: 'small' }"
-                    size="small"
-                    rowKey="name"
-                    :scroll="{ x: 760 }"
-                  >
-                    <template slot="experimentName" slot-scope="text, record">
-                      <div>
-                        <div class="exp-table-name">{{ text }}</div>
-                        <div class="exp-table-source">{{ formatExperimentSource(record.source) }}</div>
+                      <!-- Results -->
+                      <div v-else class="result-data">
+                        <!-- Metric cards -->
+                        <div class="metrics-grid">
+                          <div v-for="m in metricCards" :key="m.label" :class="['metric-card', m.cls]">
+                            <div class="metric-label">{{ m.label }}</div>
+                            <div class="metric-value">{{ m.value }}</div>
+                          </div>
+                        </div>
+
+                        <!-- Equity curve -->
+                        <div class="eq-section">
+                          <div class="eq-title">
+                            <a-icon type="area-chart" style="margin-right: 6px;" />
+                            {{ $t('indicatorIde.equityCurve') }}
+                          </div>
+                          <div ref="eqChart" class="equity-chart"></div>
+                        </div>
+
+                        <!-- Trade table -->
+                        <div class="trades-section">
+                          <div class="trades-title">
+                            <a-icon type="swap" style="margin-right: 6px;" />
+                            {{ $t('indicatorIde.trades') }}
+                            <span class="trades-count">({{ pairedTrades.length }})</span>
+                          </div>
+                          <a-table
+                            :columns="tradeColumns"
+                            :dataSource="pairedTrades"
+                            :pagination="{ pageSize: 8, size: 'small' }"
+                            size="small"
+                            :scroll="{ x: 820 }"
+                            rowKey="id"
+                          >
+                            <template slot="type" slot-scope="text">
+                              <a-tag :color="text === 'long' ? 'green' : 'red'" style="margin: 0;">{{ text.toUpperCase() }}</a-tag>
+                            </template>
+                            <template slot="exitTag" slot-scope="text, record">
+                              <a-tag
+                                v-if="record"
+                                :color="exitTagColor(record)"
+                                style="margin: 0;"
+                              >{{ exitTagLabel(record) }}</a-tag>
+                            </template>
+                            <template slot="price" slot-scope="text">
+                              <span style="font-variant-numeric: tabular-nums;">{{ fmtPrice(text) }}</span>
+                            </template>
+                            <template slot="profit" slot-scope="text">
+                              <span :style="{ color: text > 0 ? '#52c41a' : text < 0 ? '#f5222d' : '#666', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }">{{ fmtMoney(text) }}</span>
+                            </template>
+                            <template slot="money" slot-scope="text">
+                              <span style="font-weight: 600; font-variant-numeric: tabular-nums;">{{ fmtMoney(text) }}</span>
+                            </template>
+                          </a-table>
+                        </div>
+
+                        <!-- AI Optimize CTA -->
+                        <div v-if="hasResult && !running" class="ai-optimize-card">
+                          <div class="ai-optimize-card-inner">
+                            <div class="ai-optimize-card-icon">
+                              <a-icon type="experiment" />
+                            </div>
+                            <div class="ai-optimize-card-body">
+                              <div class="ai-optimize-card-title">{{ $t('indicatorIde.aiOptimize') }}</div>
+                              <div class="ai-optimize-card-desc">{{ $t('indicatorIde.aiOptimizeHint') }}</div>
+                            </div>
+                            <a-button
+                              type="primary"
+                              size="small"
+                              :loading="aiOptimizing"
+                              @click="handleAIOptimize"
+                            >
+                              <a-icon v-if="!aiOptimizing" type="thunderbolt" />
+                              {{ $t('indicatorIde.aiOptimize') }}
+                            </a-button>
+                          </div>
+                        </div>
                       </div>
-                    </template>
-                    <template slot="experimentScore" slot-scope="text, record">
-                      <span class="exp-table-score">{{ ((record.score || {}).overallScore || 0).toFixed(2) }}</span>
-                    </template>
-                    <template slot="experimentGrade" slot-scope="text, record">
-                      <a-tag :color="((record.score || {}).grade || 'C') === 'A' ? 'green' : ((record.score || {}).grade || 'C') === 'B' ? 'blue' : 'orange'">
-                        {{ (record.score || {}).grade || 'C' }}
-                      </a-tag>
-                    </template>
-                    <template slot="experimentReturn" slot-scope="text, record">
-                      <span :style="{ color: (((record.result || {}).totalReturn || 0) >= 0) ? '#52c41a' : '#f5222d', fontWeight: 600 }">
-                        {{ fmtPct((record.result || {}).totalReturn) }}
-                      </span>
-                    </template>
-                    <template slot="experimentDrawdown" slot-scope="text, record">
-                      <span>{{ fmtPct((record.result || {}).maxDrawdown) }}</span>
-                    </template>
-                    <template slot="experimentSharpe" slot-scope="text, record">
-                      <span>{{ (((record.result || {}).sharpeRatio || 0)).toFixed(2) }}</span>
-                    </template>
-                    <template slot="experimentTrades" slot-scope="text, record">
-                      <span>{{ (record.result || {}).totalTrades || 0 }}</span>
-                    </template>
-                  </a-table>
-                </div>
-                <div v-if="lastAppliedExperimentChanges.length" class="experiment-detail-card">
-                  <div class="experiment-section-title">
-                    <a-icon type="check-circle" style="margin-right: 6px;" />
-                    {{ $t('indicatorIde.lastAppliedParamsTitle') }}
-                    <span v-if="lastAppliedExperimentCandidateName" style="font-weight: 400; margin-left: 8px; font-size: 12px; opacity: 0.65;">
-                      {{ $t('indicatorIde.lastAppliedParamsFrom', { name: lastAppliedExperimentCandidateName }) }}
-                    </span>
-                  </div>
-                  <div class="experiment-change-list experiment-change-list--applied">
-                    <div v-for="item in lastAppliedExperimentChanges" :key="`applied-${item.key}`" class="experiment-change-item">
-                      <span class="experiment-change-name">{{ item.label }}</span>
-                      <span class="experiment-change-values">
-                        <span class="experiment-change-before">{{ item.fromLabel }}</span>
-                        <span class="experiment-change-arrow">→</span>
-                        <span class="experiment-change-after">{{ item.toLabel }}</span>
-                      </span>
-                    </div>
-                  </div>
+                    </a-tab-pane>
+
+                    <a-tab-pane key="aisystem" :tab="$t('indicatorIde.aiExperimentTab')">
+                      <div v-if="!experimentRunning" class="ide-tuning-launch">
+                        <div class="ide-tuning-launch-header">
+                          <div class="ide-tuning-launch-icon"><a-icon type="experiment" /></div>
+                          <div>
+                            <div class="ide-tuning-launch-title">{{ $t('indicatorIde.tuningLaunchTitle') }}</div>
+                            <div class="ide-tuning-launch-subtitle">{{ $t('indicatorIde.tuningLaunchDesc') }}</div>
+                          </div>
+                        </div>
+
+                        <div class="ide-tuning-method-cards">
+                          <div class="ide-tuning-method-card">
+                            <div class="ide-tuning-method-card-head">
+                              <a-icon type="deployment-unit" class="ide-tuning-method-icon ide-tuning-method-icon--grid" />
+                              <span class="ide-tuning-method-name">{{ $t('indicatorIde.runStructuredTune') }}</span>
+                            </div>
+                            <div class="ide-tuning-method-desc">{{ $t('indicatorIde.structuredTuneExplain') }}</div>
+                            <div class="ide-tuning-method-actions">
+                              <a-radio-group v-model="structuredTuneMethod" size="small">
+                                <a-radio-button value="grid">{{ $t('indicatorIde.structuredTuneGrid') }}</a-radio-button>
+                                <a-radio-button value="random">{{ $t('indicatorIde.structuredTuneRandom') }}</a-radio-button>
+                              </a-radio-group>
+                              <a-button
+                                size="small"
+                                :loading="experimentRunning && experimentRunKind === 'structured'"
+                                :disabled="experimentRunning"
+                                @click="handleRunStructuredTune"
+                              >
+                                <a-icon type="play-circle" />
+                                {{ $t('indicatorIde.runTune') }}
+                              </a-button>
+                            </div>
+                          </div>
+
+                          <div class="ide-tuning-method-card ide-tuning-method-card--ai">
+                            <div class="ide-tuning-method-card-head">
+                              <a-icon type="robot" class="ide-tuning-method-icon ide-tuning-method-icon--ai" />
+                              <span class="ide-tuning-method-name">{{ $t('indicatorIde.runAiExperiment') }}</span>
+                              <a-tag color="blue" size="small" style="margin-left: auto;">AI</a-tag>
+                            </div>
+                            <div class="ide-tuning-method-desc">{{ $t('indicatorIde.aiTuneExplain') }}</div>
+                            <div class="ide-tuning-method-actions">
+                              <a-button
+                                type="primary"
+                                size="small"
+                                :loading="experimentRunning && experimentRunKind === 'llm'"
+                                :disabled="experimentRunning"
+                                @click="handleRunAIExperiment"
+                              >
+                                <a-icon type="thunderbolt" />
+                                {{ $t('indicatorIde.runTune') }}
+                              </a-button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Running state with real-time progress -->
+                      <div v-if="experimentRunning" class="experiment-panel">
+                        <div class="experiment-progress-bar">
+                          <div class="experiment-progress-header">
+                            <a-spin size="small" />
+                            <span v-if="experimentRunKind === 'structured'">{{ $t('indicatorIde.structuredTuneRunning') }}</span>
+                            <span v-else>
+                              {{ $t('indicatorIde.aiOptimizing') }}
+                              <template v-if="experimentCurrentRound > 0">
+                                &mdash; {{ $t('indicatorIde.round') }} {{ experimentCurrentRound }}/{{ experimentMaxRounds }}
+                              </template>
+                            </span>
+                            <span class="running-time">{{ fmtElapsed(elapsedSec) }}</span>
+                          </div>
+                          <div v-if="experimentRunKind === 'llm' && experimentLiveHint" class="experiment-live-hint">{{ experimentLiveHint }}</div>
+                          <a-progress
+                            v-if="experimentRunKind === 'structured'"
+                            :percent="35"
+                            status="active"
+                            :show-info="false"
+                            size="small"
+                            strokeColor="#1890ff"
+                          />
+                          <a-progress
+                            v-else
+                            :percent="experimentProgressPct"
+                            status="active"
+                            :show-info="false"
+                            size="small"
+                            strokeColor="#1890ff"
+                          />
+                          <div v-if="experimentRoundScores.length" class="experiment-round-scores">
+                            <span v-for="(rs, idx) in experimentRoundScores" :key="idx" class="experiment-round-badge" :class="{ best: rs === experimentGlobalBestScoreLive }">
+                              R{{ idx + 1 }}: {{ rs.toFixed(1) }}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Empty state -->
+                      <div v-else-if="!hasExperimentResult" class="result-empty">
+                        <a-icon type="experiment" style="font-size: 48px; color: #d9d9d9;" />
+                        <p>{{ $t('indicatorIde.aiExperimentEmpty') }}</p>
+                      </div>
+
+                      <!-- Results -->
+                      <div v-else class="experiment-panel">
+                        <!-- Round progress indicators -->
+                        <div class="experiment-round-row">
+                          <div v-for="(rd, idx) in experimentRoundsInfo" :key="idx" class="experiment-round-card" :class="{ best: rd.globalBestScore === rd.bestScore && rd.bestScore > 0 }">
+                            <div class="experiment-round-num">R{{ rd.round }}</div>
+                            <div class="experiment-round-detail">
+                              <div class="experiment-round-score">{{ rd.bestScore.toFixed(1) }}</div>
+                              <div class="experiment-round-meta">{{ rd.candidateCount }} {{ $t('indicatorIde.candidates') }} &middot; {{ rd.elapsed }}s</div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <!-- Action bar -->
+                        <div class="experiment-action-bar experiment-action-bar--split">
+                          <a-button size="small" @click="handleRunAIExperiment">
+                            <a-icon type="experiment" /> {{ $t('indicatorIde.rerunAiTuning') }}
+                          </a-button>
+                          <a-button size="small" @click="handleRunStructuredTune">
+                            <a-icon type="deployment-unit" /> {{ $t('indicatorIde.rerunStructuredTuning') }}
+                          </a-button>
+                          <a-button size="small" type="primary" @click="applyBestExperimentCandidate">
+                            <a-icon type="check" /> {{ $t('indicatorIde.applyBestParams') }}
+                          </a-button>
+                        </div>
+
+                        <!-- Hero: regime + best score -->
+                        <div class="experiment-hero">
+                          <div class="experiment-hero-main">
+                            <div class="experiment-kicker">{{ $t('indicatorIde.marketRegime') }}</div>
+                            <div class="experiment-regime-title">
+                              {{ experimentRegimeLabel }}
+                              <a-tag color="blue">{{ experimentRegimeConfidence }}</a-tag>
+                            </div>
+                            <div class="experiment-hint">{{ experimentPromptHint }}</div>
+                            <div class="experiment-family-tags">
+                              <a-tag v-for="family in experimentPreferredFamilies" :key="family.key" color="purple">{{ family.label }}</a-tag>
+                            </div>
+                          </div>
+                          <div class="experiment-best-score">
+                            <div class="experiment-kicker">{{ $t('indicatorIde.bestStrategyOutput') }}</div>
+                            <div class="experiment-score">{{ experimentBestScore }}</div>
+                            <div class="experiment-grade">{{ experimentBestGrade }}</div>
+                          </div>
+                        </div>
+
+                        <!-- Best candidate card -->
+                        <div v-if="experimentBest" class="experiment-best-card">
+                          <div class="experiment-section-title">
+                            <a-icon type="trophy" style="margin-right: 6px;" />
+                            {{ $t('indicatorIde.bestStrategyOutput') }}
+                            <span v-if="experimentBest.name" style="font-weight: 400; margin-left: 8px; font-size: 12px; opacity: 0.65;">{{ experimentBest.name }}</span>
+                          </div>
+                          <div v-if="experimentBest.reasoning" class="experiment-reasoning">{{ experimentBest.reasoning }}</div>
+                          <div class="experiment-best-summary">
+                            <div class="experiment-best-metric">
+                              <span>{{ $t('indicatorIde.totalReturn') }}</span>
+                              <strong>{{ experimentBestSummary.totalReturn }}</strong>
+                            </div>
+                            <div class="experiment-best-metric">
+                              <span>{{ $t('indicatorIde.maxDrawdown') }}</span>
+                              <strong>{{ experimentBestSummary.maxDrawdown }}</strong>
+                            </div>
+                            <div class="experiment-best-metric">
+                              <span>{{ $t('indicatorIde.sharpeRatio') }}</span>
+                              <strong>{{ experimentBestSummary.sharpeRatio }}</strong>
+                            </div>
+                            <div class="experiment-best-metric">
+                              <span>{{ $t('indicatorIde.tradeCount') }}</span>
+                              <strong>{{ experimentBestSummary.totalTrades }}</strong>
+                            </div>
+                          </div>
+                          <div class="experiment-best-actions">
+                            <a-button type="primary" size="small" @click="applyBestExperimentCandidate">
+                              <a-icon type="check" /> {{ $t('indicatorIde.applyBestParams') }}
+                            </a-button>
+                          </div>
+                        </div>
+
+                        <!-- Top candidates -->
+                        <div class="experiment-candidate-grid">
+                          <div
+                            v-for="candidate in experimentCandidateCards"
+                            :key="candidate.name"
+                            class="experiment-candidate-card"
+                            :class="{ active: experimentSelectedCandidate && experimentSelectedCandidate.name === candidate.name }"
+                            @click="selectExperimentCandidate(candidate)"
+                          >
+                            <div class="experiment-candidate-header">
+                              <div>
+                                <div class="experiment-candidate-name">{{ candidate.name }}</div>
+                                <div class="experiment-candidate-source">{{ formatExperimentSource(candidate.source) }}</div>
+                              </div>
+                              <a-tag color="blue">{{ ((candidate.score || {}).grade || 'C') }}</a-tag>
+                            </div>
+                            <div class="experiment-candidate-score">{{ (((candidate.score || {}).overallScore || 0)).toFixed(2) }}</div>
+                            <div v-if="candidate.reasoning" class="experiment-candidate-reasoning">{{ candidate.reasoning }}</div>
+                            <div class="experiment-candidate-stats">
+                              <span>{{ $t('indicatorIde.totalReturn') }} {{ fmtPct((candidate.result || {}).totalReturn) }}</span>
+                              <span>{{ $t('indicatorIde.sharpeRatio') }} {{ (((candidate.result || {}).sharpeRatio || 0)).toFixed(2) }}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <!-- Selected candidate detail -->
+                        <div v-if="experimentSelectedCandidate" class="experiment-detail-card">
+                          <div class="experiment-detail-header">
+                            <div>
+                              <div class="experiment-section-title">{{ experimentSelectedCandidate.name }}</div>
+                              <div class="experiment-detail-source">{{ formatExperimentSource(experimentSelectedCandidate.source) }}</div>
+                              <div v-if="experimentSelectedCandidate.reasoning" class="experiment-reasoning">{{ experimentSelectedCandidate.reasoning }}</div>
+                            </div>
+                            <div class="experiment-detail-actions">
+                              <a-button size="small" @click="applyExperimentCandidate(experimentSelectedCandidate)">
+                                <a-icon type="check" /> {{ $t('indicatorIde.applyThisCandidate') }}
+                              </a-button>
+                              <a-button size="small" type="primary" @click="runBacktestWithExperimentCandidate(experimentSelectedCandidate)">
+                                <a-icon type="thunderbolt" /> {{ $t('indicatorIde.backtestThisCandidate') }}
+                              </a-button>
+                            </div>
+                          </div>
+                          <div class="experiment-detail-metrics">
+                            <div v-for="item in experimentSelectedSummary" :key="item.label" class="experiment-detail-metric">
+                              <span>{{ item.label }}</span>
+                              <strong>{{ item.value }}</strong>
+                            </div>
+                          </div>
+                          <div v-if="experimentSelectedChangedEntries.length" class="experiment-detail-block">
+                            <div class="experiment-detail-block-title">{{ $t('indicatorIde.tuningChangesTitle') }}</div>
+                            <div class="experiment-detail-block-hint">{{ $t('indicatorIde.tuningChangesHint') }}</div>
+                            <div class="experiment-change-list">
+                              <div v-for="item in experimentSelectedChangedEntries" :key="item.key" class="experiment-change-item">
+                                <span class="experiment-change-name">{{ item.label }}</span>
+                                <span class="experiment-change-values">
+                                  <span class="experiment-change-before">{{ item.fromLabel }}</span>
+                                  <span class="experiment-change-arrow">→</span>
+                                  <span class="experiment-change-after">{{ item.toLabel }}</span>
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          <div v-else-if="experimentSelectedChangeEntries.length" class="experiment-detail-block">
+                            <div class="experiment-detail-block-title">{{ $t('indicatorIde.tuningChangesTitle') }}</div>
+                            <div class="experiment-detail-block-hint">{{ $t('indicatorIde.tuningChangesAlreadyApplied') }}</div>
+                          </div>
+                          <div v-if="experimentSelectedScoreComponents.length" class="experiment-detail-block">
+                            <div class="experiment-detail-block-title">{{ $t('indicatorIde.scoreBreakdown') }}</div>
+                            <div class="experiment-component-grid">
+                              <div v-for="item in experimentSelectedScoreComponents" :key="item.key" class="experiment-component-card">
+                                <span>{{ item.label }}</span>
+                                <strong>{{ item.value }}</strong>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <!-- Ranking table -->
+                        <div class="experiment-ranking-card">
+                          <div class="experiment-section-title">
+                            <a-icon type="ordered-list" style="margin-right: 6px;" />
+                            {{ $t('indicatorIde.strategyRanking') }}
+                          </div>
+                          <a-table
+                            :columns="experimentColumns"
+                            :dataSource="experimentRankedStrategies"
+                            :pagination="{ pageSize: 5, size: 'small' }"
+                            size="small"
+                            rowKey="name"
+                            :scroll="{ x: 760 }"
+                          >
+                            <template slot="experimentName" slot-scope="text, record">
+                              <div>
+                                <div class="exp-table-name">{{ text }}</div>
+                                <div class="exp-table-source">{{ formatExperimentSource(record.source) }}</div>
+                              </div>
+                            </template>
+                            <template slot="experimentScore" slot-scope="text, record">
+                              <span class="exp-table-score">{{ ((record.score || {}).overallScore || 0).toFixed(2) }}</span>
+                            </template>
+                            <template slot="experimentGrade" slot-scope="text, record">
+                              <a-tag :color="((record.score || {}).grade || 'C') === 'A' ? 'green' : ((record.score || {}).grade || 'C') === 'B' ? 'blue' : 'orange'">
+                                {{ (record.score || {}).grade || 'C' }}
+                              </a-tag>
+                            </template>
+                            <template slot="experimentReturn" slot-scope="text, record">
+                              <span :style="{ color: (((record.result || {}).totalReturn || 0) >= 0) ? '#52c41a' : '#f5222d', fontWeight: 600 }">
+                                {{ fmtPct((record.result || {}).totalReturn) }}
+                              </span>
+                            </template>
+                            <template slot="experimentDrawdown" slot-scope="text, record">
+                              <span>{{ fmtPct((record.result || {}).maxDrawdown) }}</span>
+                            </template>
+                            <template slot="experimentSharpe" slot-scope="text, record">
+                              <span>{{ (((record.result || {}).sharpeRatio || 0)).toFixed(2) }}</span>
+                            </template>
+                            <template slot="experimentTrades" slot-scope="text, record">
+                              <span>{{ (record.result || {}).totalTrades || 0 }}</span>
+                            </template>
+                          </a-table>
+                        </div>
+                        <div v-if="lastAppliedExperimentChanges.length" class="experiment-detail-card">
+                          <div class="experiment-section-title">
+                            <a-icon type="check-circle" style="margin-right: 6px;" />
+                            {{ $t('indicatorIde.lastAppliedParamsTitle') }}
+                            <span v-if="lastAppliedExperimentCandidateName" style="font-weight: 400; margin-left: 8px; font-size: 12px; opacity: 0.65;">
+                              {{ $t('indicatorIde.lastAppliedParamsFrom', { name: lastAppliedExperimentCandidateName }) }}
+                            </span>
+                          </div>
+                          <div class="experiment-change-list experiment-change-list--applied">
+                            <div v-for="item in lastAppliedExperimentChanges" :key="`applied-${item.key}`" class="experiment-change-item">
+                              <span class="experiment-change-name">{{ item.label }}</span>
+                              <span class="experiment-change-values">
+                                <span class="experiment-change-before">{{ item.fromLabel }}</span>
+                                <span class="experiment-change-arrow">→</span>
+                                <span class="experiment-change-after">{{ item.toLabel }}</span>
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </a-tab-pane>
+                  </a-tabs>
                 </div>
               </div>
-            </a-tab-pane>
-          </a-tabs>
-        </div>
-            </div>
             </div>
           </a-tab-pane>
         </a-tabs>

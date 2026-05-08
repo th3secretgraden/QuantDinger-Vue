@@ -269,38 +269,6 @@
               </a-form>
             </a-tab-pane>
 
-            <!-- Credits Log Tab (消费记录) -->
-            <a-tab-pane key="credits" :tab="$t('profile.creditsLog') || '消费记录'">
-              <a-table
-                :columns="creditsLogColumns"
-                :dataSource="creditsLog"
-                :loading="creditsLogLoading"
-                :pagination="creditsLogPagination"
-                :rowKey="record => record.id"
-                size="small"
-                @change="handleCreditsLogChange"
-              >
-                <!-- Action Column -->
-                <template slot="action" slot-scope="text">
-                  <a-tag :color="getActionColor(text)">
-                    {{ getActionLabel(text) }}
-                  </a-tag>
-                </template>
-
-                <!-- Amount Column -->
-                <template slot="amount" slot-scope="text">
-                  <span :class="text >= 0 ? 'amount-positive' : 'amount-negative'">
-                    {{ text >= 0 ? '+' : '' }}{{ text }}
-                  </span>
-                </template>
-
-                <!-- Time Column -->
-                <template slot="created_at" slot-scope="text">
-                  {{ formatCreditsLogTime(text) }}
-                </template>
-              </a-table>
-            </a-tab-pane>
-
             <!-- Notification Settings Tab (通知设置) -->
             <a-tab-pane key="notifications" :tab="$t('profile.notifications.title') || '通知设置'">
               <div class="notification-settings-form">
