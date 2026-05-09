@@ -5,6 +5,7 @@
   "scripts": {
     "serve": "vue-cli-service serve --no-lint",
     "build": "vue-cli-service build --no-lint",
+    "release": "npm run build && mv dist ../QuantDinger/frontend/",
     "test:unit": "vue-cli-service test:unit",
     "lint": "vue-cli-service lint",
     "build:preview": "vue-cli-service build --no-module --mode preview",

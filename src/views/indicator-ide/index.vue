@@ -16,9 +16,9 @@
       </div>
       <!-- Left panel (collapsible drawer) -->
       <div v-show="codeDrawerVisible" ref="editorFullscreenEl" class="ide-left" :class="{ 'ide-panel--fullscreen': editorFullscreen }">
-        <!-- Code Editor (collapsible) -->
-        <div class="code-panel" :class="{ collapsed: !codePanelExpanded }">
-          <div class="panel-title" @click="codePanelExpanded = !codePanelExpanded" style="cursor: pointer;">
+        <!-- Code Editor -->
+        <div class="code-panel">
+          <div class="panel-title">
             <div class="panel-title__leading">
               <a-icon type="code" />
               <a-tag v-if="codeDirty && !selectedIndicatorIsPurchased" color="orange" size="small">{{ $t('indicatorIde.modified') }}</a-tag>
@@ -62,10 +62,59 @@
                   </a-button>
                 </a-tooltip>
               </div>
-              <a-icon :type="codePanelExpanded ? 'up' : 'down'" class="panel-title-chevron" />
             </div>
           </div>
-          <div v-show="codePanelExpanded" class="code-panel-body">
+          <div class="code-panel-body">
+            <div class="code-editor-indicatorbar">
+              <div class="ide-toolbar-group ide-toolbar-group--indicator">
+                <span class="ide-toolbar-label">{{ $t('indicatorIde.toolbar.indicator') }}</span>
+                <a-dropdown
+                  :trigger="['click']"
+                  placement="bottomLeft"
+                  :visible="indicatorDropdownVisible"
+                  :get-popup-container="ideOverlayGetPopupContainer"
+                  @visibleChange="onIndicatorDropdownVisibleChange"
+                  :overlay-class-name="isDarkTheme ? 'ide-indicator-multiselect-dropdown ide-indicator-multiselect-dropdown--dark' : 'ide-indicator-multiselect-dropdown'"
+                >
+                  <a-button
+                    size="small"
+                    class="ide-toolbar-select ide-toolbar-select--indicator ide-indicator-multiselect-trigger"
+                    :loading="loadingIndicators"
+                  >
+                    <span class="ide-indicator-trigger-text">{{ indicatorToolbarSummary }}</span>
+                    <a-icon type="down" />
+                  </a-button>
+                  <div slot="overlay" class="ide-indicator-overlay" @mousedown.stop @click.stop>
+                    <a-spin v-if="loadingIndicators" size="small" style="padding: 12px;" />
+                    <div v-else-if="!indicators.length" class="ide-indicator-overlay-empty">{{ $t('indicatorIde.noIndicatorsYet') }}</div>
+                    <div v-else class="ide-indicator-overlay-list">
+                      <div
+                        v-for="ind in indicators"
+                        :key="'ind-row-' + ind.id"
+                        class="ide-indicator-row"
+                        :class="{ active: Number(selectedIndicatorId) === Number(ind.id) }"
+                        @click="selectEditorIndicator(ind.id)"
+                      >
+                        <span
+                          class="ide-indicator-name"
+                          :class="{ active: Number(selectedIndicatorId) === Number(ind.id) }"
+                        >{{ ind.name || ('Indicator #' + ind.id) }}</span>
+                        <a-tag
+                          v-if="Number(ind.is_buy) === 1"
+                          color="purple"
+                          class="ide-indicator-purchased-tag"
+                        >{{ $t('indicatorIde.purchasedBadge') }}</a-tag>
+                        <a-icon
+                          v-if="Number(selectedIndicatorId) === Number(ind.id)"
+                          type="check"
+                          class="ide-indicator-selected-icon"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </a-dropdown>
+              </div>
+            </div>
             <div class="ide-guide-bar">
               <a-icon type="book" />
               <span>{{ $t('indicatorIde.devGuideTooltip') }}</span>
@@ -203,13 +252,75 @@
           </div>
         </div>
         <div class="ide-code-drawer-handle" @click.stop="codeDrawerVisible = false">
-          <a-icon type="double-left" />
+          <a-icon type="double-right" />
           <span>{{ $t('indicatorIde.hideCode') }}</span>
         </div>
       </div>
 
       <!-- Right panel：图表与闪电交易 / 回测与结果 分页，避免回测区挤在图表卡片下方 -->
       <div class="ide-right ide-right--workspace">
+        <div class="ide-workspace-marketbar">
+          <div class="ide-toolbar-group ide-toolbar-group--workspace">
+            <span class="ide-toolbar-label">{{ $t('indicatorIde.toolbar.workspace') }}</span>
+            <a-radio-group
+              v-model="ideWorkspaceTab"
+              button-style="solid"
+              size="small"
+              class="ide-workspace-switch"
+            >
+              <a-radio-button value="chart">{{ $t('indicatorIde.workspaceTabChart') }}</a-radio-button>
+              <a-radio-button value="backtest">{{ $t('indicatorIde.workspaceTabBacktest') }}</a-radio-button>
+            </a-radio-group>
+          </div>
+          <div class="ide-toolbar-group ide-toolbar-group--watchlist">
+            <span class="ide-toolbar-label">{{ $t('indicatorIde.toolbar.watchlist') }}</span>
+            <a-select
+              v-model="selectedWatchlistKey"
+              class="ide-toolbar-select ide-toolbar-select--watchlist chart-panel-watchlist-select"
+              :placeholder="$t('backtest-center.config.watchlistPlaceholder')"
+              size="small"
+              show-search
+              allow-clear
+              :filter-option="filterWatchlistOption"
+              :dropdown-class-name="isDarkTheme ? 'ide-watchlist-dropdown ide-watchlist-dropdown--dark' : 'ide-watchlist-dropdown'"
+              :get-popup-container="chartToolbarGetPopupContainer"
+              @change="handleWatchlistChange"
+            >
+              <a-select-option
+                v-for="w in watchlist"
+                :key="`${w.market}:${w.symbol}`"
+                :value="`${w.market}:${w.symbol}`"
+              >
+                <span class="wl-opt-tag" :class="'wl-mkt-' + (w.market || '').toLowerCase()">{{ marketLabel(w.market) }}</span>
+                <strong class="wl-opt-symbol">{{ w.symbol }}</strong>
+                <span v-if="w.name" class="wl-opt-name">{{ w.name }}</span>
+              </a-select-option>
+              <a-select-option key="__add__" value="__add__" class="add-option">
+                <div class="ide-watchlist-add-row">
+                  <a-icon type="plus" /> {{ $t('backtest-center.config.addSymbol') }}
+                </div>
+              </a-select-option>
+            </a-select>
+          </div>
+          <div class="ide-toolbar-group ide-toolbar-group--tf">
+            <span class="ide-toolbar-label">{{ $t('indicatorIde.toolbar.timeframe') }}</span>
+            <a-radio-group
+              v-model="timeframe"
+              button-style="solid"
+              size="small"
+              class="tf-group ide-tf-seg ide-tf-seg--chart"
+            >
+              <a-radio-button value="1m">1m</a-radio-button>
+              <a-radio-button value="5m">5m</a-radio-button>
+              <a-radio-button value="15m">15m</a-radio-button>
+              <a-radio-button value="30m">30m</a-radio-button>
+              <a-radio-button value="1H">1H</a-radio-button>
+              <a-radio-button value="4H">4H</a-radio-button>
+              <a-radio-button value="1D">1D</a-radio-button>
+              <a-radio-button value="1W">1W</a-radio-button>
+            </a-radio-group>
+          </div>
+        </div>
         <a-tabs v-model="ideWorkspaceTab" type="card" size="small" class="ide-workspace-tabs ide-workspace-tabs--pill" :animated="false">
           <a-tab-pane key="chart" :tab="$t('indicatorIde.workspaceTabChart')">
             <div class="ide-workspace-pane ide-workspace-pane--chart">
@@ -224,16 +335,6 @@
                       <div class="chart-panel-toolbar-top">
                         <span class="chart-panel-toolbar-title">{{ $t('indicatorIde.chartWindow') }}</span>
                         <div class="chart-panel-toolbar-top-actions">
-                          <a-tooltip :title="codeDrawerVisible ? $t('indicatorIde.hideCode') : $t('indicatorIde.showCode')">
-                            <a-button
-                              size="small"
-                              class="chart-panel-icon-btn"
-                              :type="codeDrawerVisible ? 'default' : 'primary'"
-                              @click="codeDrawerVisible = !codeDrawerVisible"
-                            >
-                              <a-icon type="code" />
-                            </a-button>
-                          </a-tooltip>
                           <a-tooltip placement="bottomLeft">
                             <template slot="title">
                               {{ quickTradeDrawerVisible ? $t('indicatorIde.hideQuickTrade') : $t('indicatorIde.showQuickTrade') }}
@@ -251,103 +352,6 @@
                           <a-tooltip :title="chartFullscreen ? $t('indicatorIde.exitFullscreen') : $t('indicatorIde.fullscreenChart')">
                             <a-button size="small" class="chart-panel-fs-btn" @click="toggleChartFullscreen"><a-icon :type="chartFullscreen ? 'fullscreen-exit' : 'fullscreen'" /></a-button>
                           </a-tooltip>
-                        </div>
-                      </div>
-                      <div class="chart-panel-toolbar-controls">
-                        <div class="ide-toolbar-group ide-toolbar-group--watchlist">
-                          <span class="ide-toolbar-label">{{ $t('indicatorIde.toolbar.watchlist') }}</span>
-                          <a-select
-                            v-model="selectedWatchlistKey"
-                            class="ide-toolbar-select ide-toolbar-select--watchlist chart-panel-watchlist-select"
-                            :placeholder="$t('backtest-center.config.watchlistPlaceholder')"
-                            size="small"
-                            show-search
-                            allow-clear
-                            :filter-option="filterWatchlistOption"
-                            :dropdown-class-name="isDarkTheme ? 'ide-watchlist-dropdown ide-watchlist-dropdown--dark' : 'ide-watchlist-dropdown'"
-                            :get-popup-container="chartToolbarGetPopupContainer"
-                            @change="handleWatchlistChange"
-                          >
-                            <a-select-option
-                              v-for="w in watchlist"
-                              :key="`${w.market}:${w.symbol}`"
-                              :value="`${w.market}:${w.symbol}`"
-                            >
-                              <span class="wl-opt-tag" :class="'wl-mkt-' + (w.market || '').toLowerCase()">{{ marketLabel(w.market) }}</span>
-                              <strong class="wl-opt-symbol">{{ w.symbol }}</strong>
-                              <span v-if="w.name" class="wl-opt-name">{{ w.name }}</span>
-                            </a-select-option>
-                            <a-select-option key="__add__" value="__add__" class="add-option">
-                              <div class="ide-watchlist-add-row">
-                                <a-icon type="plus" /> {{ $t('backtest-center.config.addSymbol') }}
-                              </div>
-                            </a-select-option>
-                          </a-select>
-                        </div>
-                        <div class="ide-toolbar-group ide-toolbar-group--tf">
-                          <span class="ide-toolbar-label">{{ $t('indicatorIde.toolbar.timeframe') }}</span>
-                          <a-radio-group
-                            v-model="timeframe"
-                            button-style="solid"
-                            size="small"
-                            class="tf-group ide-tf-seg ide-tf-seg--chart"
-                          >
-                            <a-radio-button value="1m">1m</a-radio-button>
-                            <a-radio-button value="5m">5m</a-radio-button>
-                            <a-radio-button value="15m">15m</a-radio-button>
-                            <a-radio-button value="30m">30m</a-radio-button>
-                            <a-radio-button value="1H">1H</a-radio-button>
-                            <a-radio-button value="4H">4H</a-radio-button>
-                            <a-radio-button value="1D">1D</a-radio-button>
-                            <a-radio-button value="1W">1W</a-radio-button>
-                          </a-radio-group>
-                        </div>
-                        <div class="ide-toolbar-group ide-toolbar-group--indicator">
-                          <span class="ide-toolbar-label">{{ $t('indicatorIde.toolbar.indicator') }}</span>
-                          <a-dropdown
-                            :trigger="['click']"
-                            placement="bottomLeft"
-                            :visible="indicatorDropdownVisible"
-                            :get-popup-container="chartToolbarGetPopupContainer"
-                            @visibleChange="onIndicatorDropdownVisibleChange"
-                            :overlay-class-name="isDarkTheme ? 'ide-indicator-multiselect-dropdown ide-indicator-multiselect-dropdown--dark' : 'ide-indicator-multiselect-dropdown'"
-                          >
-                            <a-button
-                              size="small"
-                              class="ide-toolbar-select ide-toolbar-select--indicator ide-indicator-multiselect-trigger"
-                              :loading="loadingIndicators"
-                            >
-                              <span class="ide-indicator-trigger-text">{{ indicatorToolbarSummary }}</span>
-                              <a-icon type="down" />
-                            </a-button>
-                            <div slot="overlay" class="ide-indicator-overlay" @mousedown.stop @click.stop>
-                              <div class="ide-indicator-overlay-hint">{{ $t('indicatorIde.chartPickHint') }}</div>
-                              <a-spin v-if="loadingIndicators" size="small" style="padding: 12px;" />
-                              <div v-else-if="!indicators.length" class="ide-indicator-overlay-empty">{{ $t('indicatorIde.noIndicatorsYet') }}</div>
-                              <div v-else class="ide-indicator-overlay-list">
-                                <div
-                                  v-for="ind in indicators"
-                                  :key="'ind-row-' + ind.id"
-                                  class="ide-indicator-row"
-                                >
-                                  <a-checkbox
-                                    :checked="isIndicatorChartVisible(ind.id)"
-                                    @change="e => onChartIndicatorCheckChange(ind.id, e.target.checked)"
-                                  />
-                                  <span
-                                    class="ide-indicator-name"
-                                    :class="{ active: Number(selectedIndicatorId) === Number(ind.id) }"
-                                    @click="selectEditorIndicator(ind.id)"
-                                  >{{ ind.name || ('Indicator #' + ind.id) }}</span>
-                                  <a-tag
-                                    v-if="Number(ind.is_buy) === 1"
-                                    color="purple"
-                                    class="ide-indicator-purchased-tag"
-                                  >{{ $t('indicatorIde.purchasedBadge') }}</a-tag>
-                                </div>
-                              </div>
-                            </div>
-                          </a-dropdown>
                         </div>
                       </div>
                     </div>
@@ -1219,8 +1223,6 @@ export default {
       indicators: [],
       loadingIndicators: false,
       selectedIndicatorId: undefined,
-      /** 勾选显示在 K 线上的指标 id（可多选）；与「当前编辑」selectedIndicatorId 独立 */
-      chartVisibleIndicatorIds: [],
       indicatorDropdownVisible: false,
       editorFullscreen: false,
       chartFullscreen: false,
@@ -1229,7 +1231,6 @@ export default {
       cmInstance: null,
 
       codeDrawerVisible: true,
-      codePanelExpanded: true,
       paramsPanelExpanded: true,
       /** 已购指标说明条：用户关闭后按账号写入 storage，不再展示 */
       purchasedMarketHintDismissed: false,
@@ -1418,7 +1419,7 @@ export default {
       return this.selectedIndicatorId && this.symbol && this.startDate && this.endDate
     },
     selectedIndicatorObj () {
-      return this.selectedIndicatorId ? this.indicators.find(i => i.id === this.selectedIndicatorId) : null
+      return this.selectedIndicatorId ? this.indicators.find(i => Number(i.id) === Number(this.selectedIndicatorId)) : null
     },
     /** 指标市场购买的副本：后端禁止覆盖保存，前端只读展示，可回测 / 另存为后编辑 */
     selectedIndicatorIsPurchased () {
@@ -1591,23 +1592,15 @@ export default {
     },
     chartIndicatorToggleDisabled () {
       if (this.chartIndicatorRunning) return false
-      if (!this.chartVisibleIndicatorIds.length) return true
-      return !this.chartVisibleIndicatorIds.some((rawId) => {
-        const id = Number(rawId)
-        const ind = this.indicators.find(i => Number(i.id) === id)
-        const code = Number(this.selectedIndicatorId) === id
-          ? (this.currentCode || (ind && ind.code) || '')
-          : ((ind && ind.code) || '')
-        return code && String(code).trim()
-      })
+      if (!this.selectedIndicatorId) return true
+      const ind = this.selectedIndicatorObj
+      const code = this.currentCode || (ind && ind.code) || ''
+      return !code || !String(code).trim()
     },
     indicatorToolbarSummary () {
       const ed = this.selectedIndicatorObj
-      const edLabel = ed ? (ed.name || ('#' + ed.id)) : '--'
-      const n = (this.chartVisibleIndicatorIds && this.chartVisibleIndicatorIds.length) || 0
       if (!this.indicators.length) return this.$t('indicatorIde.noIndicatorsYet')
-      if (!n) return `${edLabel} · ${this.$t('indicatorIde.indicatorPickPlaceholder')}`
-      return `${edLabel} · ${this.$t('indicatorIde.indicatorCountOnChart', { n })}`
+      return ed ? (ed.name || ('#' + ed.id)) : this.$t('indicatorIde.indicatorPickPlaceholder')
     },
     pairedTrades () {
       const raw = (this.result && this.result.trades) || []
@@ -1662,7 +1655,6 @@ export default {
     await this.loadIndicators()
     await this.loadWatchlist()
     this.restoreIdeUiState()
-    this.autoSelectFirstIndicator()
   },
   mounted () {
     this._fullscreenListener = () => this.onGlobalFullscreenChange()
@@ -1803,16 +1795,8 @@ export default {
         if (raw == null || raw === '') return
         const s = typeof raw === 'string' ? JSON.parse(raw) : raw
         if (!s || typeof s !== 'object') return
-        let hadChartVisibleKey = false
         if (Array.isArray(s.activeIndicators)) {
           this.activeIndicators = this.normalizePersistedChartIndicators(s.activeIndicators)
-        }
-        if (Array.isArray(s.chartVisibleIndicatorIds)) {
-          hadChartVisibleKey = true
-          const valid = s.chartVisibleIndicatorIds
-            .map(Number)
-            .filter(id => !isNaN(id) && this.indicators.some(i => Number(i.id) === id))
-          this.chartVisibleIndicatorIds = valid
         }
         if (s.timeframe && Object.prototype.hasOwnProperty.call(TF_MAX_DAYS, s.timeframe)) {
           this.timeframe = s.timeframe
@@ -1838,10 +1822,6 @@ export default {
             this.onIndicatorChange(id)
           }
         }
-        if (!hadChartVisibleKey && !this.chartVisibleIndicatorIds.length && this.selectedIndicatorId != null) {
-          this.chartVisibleIndicatorIds = [Number(this.selectedIndicatorId)]
-          this.syncSelectedIndicatorToChart()
-        }
         this.reconcileIdeMarketFromWatchlist()
       } catch (_) { /* ignore corrupt cache */ }
     },
@@ -1862,7 +1842,6 @@ export default {
           symbol: this.symbol,
           timeframe: this.timeframe,
           selectedIndicatorId: this.selectedIndicatorId,
-          chartVisibleIndicatorIds: this.chartVisibleIndicatorIds,
           selectedWatchlistKey: this.selectedWatchlistKey,
           activeIndicators: this.serializeChartIndicators()
         }
@@ -1902,12 +1881,11 @@ export default {
         console.warn('Load indicators failed:', e)
       } finally {
         this.loadingIndicators = false
-        this.pruneChartVisibleIndicatorIds()
+        if (this.selectedIndicatorId && !this.indicators.some(i => Number(i.id) === Number(this.selectedIndicatorId))) {
+          this.selectedIndicatorId = undefined
+          this.onIndicatorChange(undefined)
+        }
       }
-    },
-    pruneChartVisibleIndicatorIds () {
-      const set = new Set(this.indicators.map(i => Number(i.id)))
-      this.chartVisibleIndicatorIds = (this.chartVisibleIndicatorIds || []).filter(id => set.has(Number(id)))
     },
     async loadWatchlist () {
       if (!this.userId) return
@@ -1934,15 +1912,6 @@ export default {
       }
     },
 
-    autoSelectFirstIndicator () {
-      if (this.indicators.length > 0 && !this.selectedIndicatorId) {
-        this.selectedIndicatorId = this.indicators[0].id
-        if (!this.chartVisibleIndicatorIds.length) {
-          this.chartVisibleIndicatorIds = [Number(this.indicators[0].id)]
-        }
-        this.onIndicatorChange(this.indicators[0].id)
-      }
-    },
     ensureChartReady () {
       this.reconcileIdeMarketFromWatchlist()
       this.$nextTick(() => {
@@ -2015,7 +1984,6 @@ export default {
       } else {
         this.currentCode = ''
         this.codeDirty = false
-        this.chartVisibleIndicatorIds = []
         if (this.cmInstance) {
           this.cmInstance.setValue('')
         }
@@ -2057,17 +2025,11 @@ export default {
     syncSelectedIndicatorToChart (codeOverride) {
       const nonPython = this.activeIndicators.filter(item => !this.isIdePythonActiveItem(item))
       const pythonBlocks = []
-      if (this.chartIndicatorRunning) {
-        const seen = new Set()
-        for (const rawId of this.chartVisibleIndicatorIds || []) {
-          const id = Number(rawId)
-          if (isNaN(id) || seen.has(id)) continue
-          seen.add(id)
-          const ind = this.indicators.find(i => Number(i.id) === id)
-          if (!ind) continue
-          const code = Number(this.selectedIndicatorId) === id
-            ? (typeof codeOverride === 'string' ? codeOverride : (this.currentCode || ind.code || ''))
-            : (ind.code || '')
+      if (this.chartIndicatorRunning && this.selectedIndicatorId) {
+        const id = Number(this.selectedIndicatorId)
+        const ind = this.indicators.find(i => Number(i.id) === id)
+        if (ind) {
+          const code = typeof codeOverride === 'string' ? codeOverride : (this.currentCode || ind.code || '')
           const built = this.buildIdePythonIndicatorForChart(ind, code)
           if (built) pythonBlocks.push(built)
         }
@@ -2082,39 +2044,15 @@ export default {
     },
     toggleChartIndicatorRun () {
       if (!this.chartIndicatorRunning && this.chartIndicatorToggleDisabled) return
-      if (!this.chartIndicatorRunning && !this.chartVisibleIndicatorIds.length && this.selectedIndicatorId != null) {
-        this.chartVisibleIndicatorIds = [Number(this.selectedIndicatorId)]
-      }
       this.chartIndicatorRunning = !this.chartIndicatorRunning
       this.syncSelectedIndicatorToChart()
     },
     onIndicatorDropdownVisibleChange (visible) {
       this.indicatorDropdownVisible = visible
     },
-    isIndicatorChartVisible (rawId) {
-      const id = Number(rawId)
-      return (this.chartVisibleIndicatorIds || []).some(x => Number(x) === id)
-    },
-    onChartIndicatorCheckChange (rawId, checked) {
-      const id = Number(rawId)
-      if (isNaN(id)) return
-      if (checked) {
-        if (!this.chartVisibleIndicatorIds.includes(id)) {
-          this.chartVisibleIndicatorIds = [...this.chartVisibleIndicatorIds, id]
-        }
-      } else {
-        this.chartVisibleIndicatorIds = this.chartVisibleIndicatorIds.filter(x => Number(x) !== id)
-      }
-      this.syncSelectedIndicatorToChart()
-    },
     selectEditorIndicator (rawId) {
       this.indicatorDropdownVisible = false
       this.selectedIndicatorId = rawId
-      const id = Number(rawId)
-      // 点击名称：切换编辑器并默认仅将该指标绘制到 K 线；多指标需再勾选其他行前复选框追加
-      if (!isNaN(id)) {
-        this.chartVisibleIndicatorIds = [id]
-      }
       this.onIndicatorChange(rawId)
     },
     /** 当前处于本页「图表 / 编辑器」全屏时的挂载根节点；Modal / message 与部分浮层共用 */
@@ -2144,6 +2082,13 @@ export default {
       const ch = this.$refs.chartFullscreenEl
       if (ch && fs === ch) return ch
       if (this.chartFullscreen && ch) return ch
+      return document.body
+    },
+    ideOverlayGetPopupContainer () {
+      const fs = document.fullscreenElement || document.webkitFullscreenElement
+      const editor = this.$refs.editorFullscreenEl
+      if (editor && fs === editor) return editor
+      if (this.editorFullscreen && editor) return editor
       return document.body
     },
     async toggleEditorFullscreen () {
@@ -2202,11 +2147,9 @@ export default {
       if (action === 'remove') {
         const dbId = parseIdeDbId(indicator.id) || parseIdeDbId(targetInstanceId)
         if (dbId != null && !isNaN(dbId)) {
-          this.chartVisibleIndicatorIds = this.chartVisibleIndicatorIds.filter(x => Number(x) !== dbId)
+          if (Number(this.selectedIndicatorId) === dbId) this.chartIndicatorRunning = false
         } else if (String(indicator.id) === 'selected-python-indicator' || String(targetInstanceId) === 'selected-python-indicator') {
-          if (this.selectedIndicatorId != null) {
-            this.chartVisibleIndicatorIds = this.chartVisibleIndicatorIds.filter(x => Number(x) !== Number(this.selectedIndicatorId))
-          }
+          this.chartIndicatorRunning = false
         }
       }
       if (action === 'add') {
@@ -2266,10 +2209,6 @@ export default {
             targetId = this.indicators.reduce((maxId, item) => Math.max(maxId, Number(item.id) || 0), 0)
           }
           if (targetId) {
-            const tid = Number(targetId)
-            if (!this.chartVisibleIndicatorIds.includes(tid)) {
-              this.chartVisibleIndicatorIds = [...this.chartVisibleIndicatorIds, tid]
-            }
             this.selectedIndicatorId = targetId
             this.onIndicatorChange(targetId)
             this.codeDirty = false
@@ -2383,18 +2322,13 @@ export default {
         })
         if (res && res.code === 1) {
           this.$message.success(this.$t('dashboard.indicator.delete.success'))
-          this.chartVisibleIndicatorIds = this.chartVisibleIndicatorIds.filter(x => Number(x) !== Number(id))
           await this.loadIndicators()
           if (this.indicators.length > 0) {
             const first = this.indicators[0]
             this.selectedIndicatorId = first.id
-            if (!this.chartVisibleIndicatorIds.length) {
-              this.chartVisibleIndicatorIds = [Number(first.id)]
-            }
             this.onIndicatorChange(first.id)
           } else {
             this.selectedIndicatorId = undefined
-            this.chartVisibleIndicatorIds = []
             this.onIndicatorChange(undefined)
           }
         } else {
@@ -3651,7 +3585,6 @@ export default {
       if (!this.hasResult || !this.currentCode) return
       this.aiOptimizing = true
       this.codeDrawerVisible = true
-      this.codePanelExpanded = true
       this.aiPanelExpanded = true
 
       const r = this.result || {}
@@ -3765,10 +3698,6 @@ export default {
             targetId = this.indicators.reduce((maxId, item) => Math.max(maxId, Number(item.id) || 0), 0)
           }
           if (targetId) {
-            const tid = Number(targetId)
-            if (!this.chartVisibleIndicatorIds.includes(tid)) {
-              this.chartVisibleIndicatorIds = [...this.chartVisibleIndicatorIds, tid]
-            }
             this.selectedIndicatorId = targetId
             this.currentCode = code
             this.codeDirty = false
@@ -4062,9 +3991,6 @@ export default {
       if (runIndId && Number(this.selectedIndicatorId) !== runIndId) {
         const exists = this.indicators.some(i => Number(i.id) === runIndId)
         if (exists) {
-          if (!this.chartVisibleIndicatorIds.some(x => Number(x) === runIndId)) {
-            this.chartVisibleIndicatorIds = [...this.chartVisibleIndicatorIds, runIndId]
-          }
           this.selectedIndicatorId = runIndId
           this.onIndicatorChange(runIndId)
           this.$message.info(this.$t('indicatorIde.historyRunSwitchedIndicator', { id: runIndId }))
@@ -4198,12 +4124,6 @@ export default {
     selectedIndicatorId () {
       this.schedulePersistIdeUiState()
     },
-    chartVisibleIndicatorIds: {
-      deep: true,
-      handler () {
-        this.schedulePersistIdeUiState()
-      }
-    },
     selectedWatchlistKey () {
       this.schedulePersistIdeUiState()
     },
@@ -4270,6 +4190,7 @@ export default {
 
 <style lang="less" scoped>
 @primary-color: #1890ff;
+@ide-workspace-bg: #eef2f7;
 
 .indicator-ide {
   display: flex;
@@ -4279,7 +4200,7 @@ export default {
   height: auto;
   width: 100%;
   padding: 0;
-  background: #fff;
+  background: @ide-workspace-bg;
   box-sizing: border-box;
 }
 
@@ -4421,10 +4342,11 @@ export default {
 }
 
 // ===== Main =====
-.ide-main { display: flex; flex: 1 1 auto; overflow: visible; min-height: 0; align-items: stretch; }
+.ide-main { display: flex; flex: 1 1 auto; overflow: visible; min-height: 0; align-items: stretch; background: @ide-workspace-bg; }
 
 /* 代码栏收起：左侧竖条标签，点击展开（抽拉入口） */
 .ide-code-rail {
+  order: 2;
   flex: 0 0 32px;
   width: 32px;
   min-width: 32px;
@@ -4436,15 +4358,15 @@ export default {
   gap: 10px;
   cursor: pointer;
   user-select: none;
-  border-right: 1px solid #e2e8f0;
-  background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+  border-left: 1px solid #e2e8f0;
+  background: @ide-workspace-bg;
   color: #475569;
   transition: background 0.2s, color 0.2s, box-shadow 0.2s;
-  box-shadow: 2px 0 8px rgba(15, 23, 42, 0.04);
+  box-shadow: -2px 0 8px rgba(15, 23, 42, 0.04);
   &:hover {
     background: linear-gradient(180deg, #e8f4ff 0%, #dbeafe 100%);
     color: @primary-color;
-    box-shadow: 2px 0 12px rgba(24, 144, 255, 0.12);
+    box-shadow: -2px 0 12px rgba(24, 144, 255, 0.12);
   }
   &:focus {
     outline: none;
@@ -4467,6 +4389,7 @@ export default {
 }
 
 .ide-left {
+  order: 2;
   width: 30%;
   min-width: 280px;
   max-width: 400px;
@@ -4475,7 +4398,7 @@ export default {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  border-right: 1px solid #eee;
+  border-left: 1px solid #eee;
   overflow: hidden;
   flex-shrink: 0;
   background: #fcfcfd;
@@ -4491,7 +4414,7 @@ export default {
     position: relative;
     top: auto;
     align-self: stretch;
-    border-right: none;
+    border-left: none;
   }
 }
 
@@ -4522,7 +4445,6 @@ export default {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  &.collapsed { flex: 0 0 auto; }
 }
 .code-panel-body { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 .code-editor-wrapper { flex: 1; position: relative; overflow: hidden; display: flex; flex-direction: column; }
@@ -4585,8 +4507,6 @@ export default {
   border-bottom: 1px solid #f0f0f0;
   flex-shrink: 0;
   user-select: none;
-  transition: background 0.15s;
-  &:hover { background: #f5f7fa; }
 }
 .panel-title__leading {
   display: flex;
@@ -4600,11 +4520,6 @@ export default {
   display: flex;
   align-items: center;
   gap: 6px;
-  flex-shrink: 0;
-}
-.panel-title-chevron {
-  font-size: 11px;
-  color: #94a3b8;
   flex-shrink: 0;
 }
 .panel-title-actions {
@@ -4624,6 +4539,20 @@ export default {
     border-color: #e0e0e0;
     &:hover { border-color: @primary-color; color: @primary-color; }
     &[disabled] { opacity: 0.35; }
+  }
+}
+.code-editor-indicatorbar {
+  flex: 0 0 auto;
+  padding: 8px 10px;
+  border-bottom: 1px solid #eef2f7;
+  background: #f8fafc;
+  .ide-toolbar-group--indicator {
+    width: 100%;
+    align-items: stretch;
+  }
+  .ide-indicator-multiselect-trigger {
+    width: 100%;
+    max-width: none;
   }
 }
 .ide-guide-bar {
@@ -5074,6 +5003,7 @@ export default {
 
 // ===== Right Panel =====
 .ide-right {
+  order: 1;
   flex: 1 1 0;
   display: flex;
   flex-direction: column;
@@ -5089,8 +5019,75 @@ export default {
   flex: 1 1 0;
   height: calc(100vh - 64px - 8px);
   max-height: calc(100vh - 64px - 8px);
+  background: @ide-workspace-bg;
 }
 /* 根节点同时带 .ide-workspace-tabs 与 .ant-tabs，勿用 /deep/ .ant-tabs 仅匹配子级 */
+.ide-workspace-marketbar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  min-width: 0;
+  padding: 8px 10px;
+  background: @ide-workspace-bg;
+  flex-wrap: nowrap;
+  .ide-toolbar-group--workspace {
+    flex: 0 0 auto;
+    min-width: 214px;
+  }
+  .ide-toolbar-group--watchlist {
+    flex: 0 1 320px;
+    min-width: 220px;
+  }
+  .ide-toolbar-group--tf {
+    flex: 1 1 360px;
+    min-width: 220px;
+  }
+  .chart-panel-watchlist-select {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+  }
+  .ide-toolbar-group {
+    min-height: 58px;
+    justify-content: space-between;
+    background: #f8fafc;
+    border-color: #d8e0ea;
+  }
+  /deep/ .ant-select-selection--single {
+    height: 30px;
+  }
+  /deep/ .ant-select-selection__rendered {
+    line-height: 28px;
+  }
+  .ide-tf-seg--chart {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    max-width: 100%;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 2px;
+    /deep/ .ant-radio-button-wrapper {
+      flex-shrink: 0;
+      height: 30px;
+      line-height: 28px;
+    }
+  }
+  .ide-workspace-switch {
+    display: flex;
+    flex-wrap: nowrap;
+    min-width: 0;
+    /deep/ .ant-radio-button-wrapper {
+      flex: 1 1 auto;
+      height: 30px;
+      line-height: 28px;
+      padding: 0 12px;
+      text-align: center;
+      white-space: nowrap;
+      border-color: #d8e0ea;
+    }
+  }
+}
 .ide-workspace-tabs {
   flex: 1 1 0;
   display: flex;
@@ -5153,6 +5150,7 @@ export default {
   flex: 1;
   min-height: 0;
   overflow: hidden;
+  background: @ide-workspace-bg;
 }
 .ide-workspace-pane--backtest {
   flex: 0 0 auto;
@@ -5171,12 +5169,14 @@ export default {
 /* 右侧「图表 / 回测」工作区 Tab：浅色卡片条（bar 为根下第一子；内容区用 card-content，避免 Sentinel 导致选不中） */
 .ide-workspace-tabs.ide-workspace-tabs--pill {
   padding: 0 10px 0;
+  background: @ide-workspace-bg;
   & > {
     /deep/ .ant-tabs-bar {
-      border-bottom: 1px solid #e8e8e8;
+      display: none;
+      border-bottom: none;
       margin: 0 0 0;
       padding: 8px 0 0;
-      background: linear-gradient(180deg, #fafbfc 0%, #f4f6f9 100%);
+      background: @ide-workspace-bg;
       /deep/ .ant-tabs-nav-container {
         height: auto !important;
       }
@@ -5191,19 +5191,19 @@ export default {
         font-size: 12px;
         font-weight: 600;
         border-radius: 10px 10px 0 0 !important;
-        border: 1px solid #e2e8f0 !important;
+        border: 1px solid #d8e0ea !important;
         border-bottom: none !important;
-        background: #fff !important;
+        background: #e5ebf3 !important;
         color: #64748b !important;
         transition: color 0.15s, background 0.15s, box-shadow 0.15s;
         &:hover {
           color: @primary-color !important;
-          background: #f8fafc !important;
+          background: #edf4fb !important;
         }
       }
       /deep/ .ant-tabs-tab-active {
         color: @primary-color !important;
-        background: linear-gradient(180deg, #ffffff 0%, #f0f7ff 100%) !important;
+        background: linear-gradient(180deg, #f8fbff 0%, #edf6ff 100%) !important;
         border-color: #bae0ff !important;
         box-shadow: 0 -2px 10px rgba(24, 144, 255, 0.12);
         position: relative;
@@ -5220,15 +5220,40 @@ export default {
     }
   }
   /deep/ .ant-tabs-card-content {
-    border-radius: 0 0 10px 10px;
-    background: #fff;
-    border: 1px solid #e8e8e8;
-    border-top: none;
-    margin-top: -1px;
+    border-radius: 10px;
+    background: @ide-workspace-bg;
+    margin-top: 0;
   }
 }
 
 /* 闪电交易：主布局内右侧栏，与 .ide-left 同为抽拉分栏（无全屏遮罩） */
+@media (max-width: 1180px) {
+  .ide-workspace-marketbar {
+    flex-wrap: wrap;
+    .ide-toolbar-group--workspace {
+      flex: 0 1 260px;
+    }
+    .ide-toolbar-group--watchlist {
+      flex: 1 1 300px;
+    }
+    .ide-toolbar-group--tf {
+      flex: 1 1 100%;
+    }
+  }
+}
+
+@media (max-width: 640px) {
+  .ide-workspace-marketbar {
+    padding: 8px;
+    .ide-toolbar-group--workspace,
+    .ide-toolbar-group--watchlist,
+    .ide-toolbar-group--tf {
+      flex: 1 1 100%;
+      min-width: 0;
+    }
+  }
+}
+
 .ide-quick-right {
   width: 30%;
   min-width: 280px;
@@ -5320,7 +5345,7 @@ export default {
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
-  background: #fff;
+  background: @ide-workspace-bg;
   align-self: stretch;
   /* 高于下方回测区，避免同列层叠时盖住闪电交易侧栏内的浮层（与 body 下拉高 z-index 配合） */
   position: relative;
@@ -5353,6 +5378,7 @@ export default {
   min-width: 0;
   overflow: hidden;
   align-items: stretch;
+  background: @ide-workspace-bg;
 }
 .ide-quick-right--chart-fs {
   flex: 0 0 auto;
@@ -5372,7 +5398,7 @@ export default {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  background: #fff;
+  background: @ide-workspace-bg;
   .chart-panel-toolbar {
     flex-shrink: 0;
     display: flex;
@@ -5380,7 +5406,7 @@ export default {
     gap: 8px;
     padding: 8px 10px 10px;
     border-bottom: 1px solid #f0f0f0;
-    background: #fafafa;
+    background: #f8fafc;
   }
   .chart-panel-toolbar-top {
     display: flex;
@@ -6305,10 +6331,10 @@ export default {
     }
   }
   .ide-code-rail {
-    border-right-color: #303030;
+    border-left-color: #303030;
     background: linear-gradient(180deg, #1f1f1f 0%, #181818 100%);
     color: rgba(255, 255, 255, 0.5);
-    box-shadow: 2px 0 14px rgba(0, 0, 0, 0.5);
+    box-shadow: -2px 0 14px rgba(0, 0, 0, 0.5);
     &:hover {
       background: linear-gradient(180deg, rgba(23, 125, 220, 0.14) 0%, rgba(23, 125, 220, 0.06) 100%);
       color: #58a6ff;
@@ -6320,7 +6346,21 @@ export default {
   .ide-code-rail__icon {
     color: #58a6ff;
   }
+  .ide-workspace-marketbar {
+    background: linear-gradient(180deg, #1a1a1a 0%, #141414 100%);
+    border-bottom-color: #303030;
+  }
+  .ide-right--workspace,
+  .ide-workspace-pane--chart,
+  .ide-chart-fs-row {
+    background: #141414;
+  }
+  .code-editor-indicatorbar {
+    background: #181818;
+    border-bottom-color: #303030;
+  }
   .ide-workspace-tabs.ide-workspace-tabs--pill {
+    background: #141414;
     /deep/ .ant-tabs-bar {
       border-bottom-color: #303030;
       background: linear-gradient(180deg, #1a1a1a 0%, #141414 100%);
@@ -6347,9 +6387,6 @@ export default {
       border-top: none;
     }
   }
-  .panel-title-chevron {
-    color: rgba(255, 255, 255, 0.38);
-  }
   .chart-panel-icon-btn {
     background: #262626;
     border-color: #434343;
@@ -6366,7 +6403,7 @@ export default {
     border-color: #434343;
     color: rgba(255, 255, 255, 0.65);
   }
-  .ide-left { background: #181818; border-right-color: #303030; }
+  .ide-left { background: #181818; border-left-color: #303030; }
   .ide-chart-fs-root {
     background: #141414;
     border-bottom-color: #303030;
@@ -6461,7 +6498,7 @@ export default {
   }
   .ai-optimize-card-title { color: rgba(255, 255, 255, 0.88); }
   .ai-optimize-card-desc { color: rgba(255, 255, 255, 0.45); }
-  .panel-title { color: rgba(255,255,255,0.85); border-bottom-color: #303030; &:hover { background: rgba(255,255,255,0.04); } }
+  .panel-title { color: rgba(255,255,255,0.85); border-bottom-color: #303030; }
   .ai-gen-panel { border-top-color: #303030; }
   .ai-gen-header { color: rgba(255,255,255,0.85); &:hover { background: rgba(255,255,255,0.04); } }
   .code-ai-overlay { background: rgba(20,20,20,0.82); }
@@ -6907,8 +6944,12 @@ body.dark .indicator-ide .result-tabs .ant-tabs-tab-active {
   gap: 8px;
   padding: 6px 8px;
   border-radius: 6px;
+  cursor: pointer;
   &:hover {
     background: #f5f5f5;
+  }
+  &.active {
+    background: rgba(24, 144, 255, 0.08);
   }
 }
 .ide-indicator-name {
@@ -6932,6 +6973,11 @@ body.dark .indicator-ide .result-tabs .ant-tabs-tab-active {
   padding: 0 4px;
   flex-shrink: 0;
 }
+.ide-indicator-selected-icon {
+  flex-shrink: 0;
+  color: #1890ff;
+  font-size: 12px;
+}
 .ide-indicator-multiselect-dropdown--dark {
   .ant-dropdown-menu {
     background: #1f1f1f;
@@ -6947,11 +6993,17 @@ body.dark .indicator-ide .result-tabs .ant-tabs-tab-active {
   .ide-indicator-row:hover {
     background: rgba(255, 255, 255, 0.06);
   }
+  .ide-indicator-row.active {
+    background: rgba(23, 125, 220, 0.18);
+  }
   .ide-indicator-name {
     color: rgba(255, 255, 255, 0.85);
     &.active {
       color: #58a6ff;
     }
+  }
+  .ide-indicator-selected-icon {
+    color: #58a6ff;
   }
 }
 

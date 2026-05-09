@@ -692,9 +692,7 @@ export default {
     bottom: 0;
     left: 208px;
     right: 0;
-    padding: 16px 24px;
-    background: #fff;
-    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+    padding: 16px 48px;
     display: flex;
     justify-content: flex-end;
     gap: 12px;
