@@ -61,6 +61,14 @@
                     <a-icon :type="chartIndicatorRunning ? 'pause-circle' : 'play-circle'" />
                   </a-button>
                 </a-tooltip>
+                <a-tooltip :title=" $t('indicatorIde.hideCode') ">
+                  <a-button
+                    size="small"
+                    @click.stop="codeDrawerVisible = false"
+                  >
+                    <a-icon type="double-right" />
+                  </a-button>
+                </a-tooltip>
               </div>
             </div>
           </div>
@@ -244,16 +252,9 @@
                   <a-icon v-if="!aiGenerating" type="robot" />
                   {{ aiGenerating ? $t('indicatorIde.generating') : $t('indicatorIde.generateCode') }}
                 </a-button>
-                <div class="ai-helper-links">
-                  <a @click.prevent="goToIndicatorMarket">{{ $t('indicatorIde.goIndicatorMarket') }}</a>
-                </div>
               </div>
             </div>
           </div>
-        </div>
-        <div class="ide-code-drawer-handle" @click.stop="codeDrawerVisible = false">
-          <a-icon type="double-right" />
-          <span>{{ $t('indicatorIde.hideCode') }}</span>
         </div>
       </div>
 
@@ -321,7 +322,14 @@
             </a-radio-group>
           </div>
         </div>
-        <a-tabs v-model="ideWorkspaceTab" type="card" size="small" class="ide-workspace-tabs ide-workspace-tabs--pill" :animated="false">
+        <a-tabs
+          v-model="ideWorkspaceTab"
+          type="card"
+          size="small"
+          class="ide-workspace-tabs ide-workspace-tabs--pill"
+          :animated="false"
+          :tabBarStyle="{ display: 'none' }"
+        >
           <a-tab-pane key="chart" :tab="$t('indicatorIde.workspaceTabChart')">
             <div class="ide-workspace-pane ide-workspace-pane--chart">
               <div
@@ -5172,7 +5180,6 @@ export default {
   background: @ide-workspace-bg;
   & > {
     /deep/ .ant-tabs-bar {
-      display: none;
       border-bottom: none;
       margin: 0 0 0;
       padding: 8px 0 0;

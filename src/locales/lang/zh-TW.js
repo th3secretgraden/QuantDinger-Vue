@@ -4294,6 +4294,7 @@ const locale = {
   'indicatorIde.quickTradeReuseHint': '這裡直接複用系統原有的閃電交易抽屜，交易邏輯與原模組保持一致。',
   'indicatorIde.toolbar.watchlist': '自選標的',
   'indicatorIde.toolbar.timeframe': 'K 線週期',
+  'indicatorIde.toolbar.workspace': '工作區',
   'indicatorIde.toolbar.indicator': '指標',
   'indicatorIde.runAiExperiment': '執行智慧調參',
   'indicatorIde.aiExperimentRunning': '正在多輪回測與優選參數…',
